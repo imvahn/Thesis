@@ -18,6 +18,7 @@ interface SoundGeneratorProps {
   xEnd: number | null;
   cpxValue: string | null;
   cpyValue: string | null;
+  gain: number;
 }
 
 export default function SoundGenerator({
@@ -30,6 +31,7 @@ export default function SoundGenerator({
   xEnd,
   cpxValue,
   cpyValue,
+  gain,
 }: SoundGeneratorProps) {
   const { baseEquation, stretch, transformX, transformY } = params;
 
@@ -322,6 +324,10 @@ export default function SoundGenerator({
       if (!synthRef.current) {
         synthRef.current = new Tone.FMSynth({
           oscillator: { type: "sine" },
+          envelope: {
+            attack: 0.1,
+            release: 1
+          }
         });
         Tone.getTransport().bpm.value = bpm;
         Tone.getTransport().start("+0.1");
@@ -359,11 +365,11 @@ export default function SoundGenerator({
         Q: 3,
       });
       reverbRef.current = new Tone.Reverb();
-
+      gainRef.current = new Tone.Gain(gain).toDestination();
       samplerRef.current.connect(filterRef.current);
       synthRef.current.connect(filterRef.current);
-      filterRef.current.toDestination();
-      // filterRef.current.connect(reverbRef.current);
+      filterRef.current.connect(reverbRef.current);
+      reverbRef.current.connect(gainRef.current);
       // reverbRef.current.toDestination();
       // Setup LFO based on computed memoized functions
       if (memoizedFunctions.computedCutoffFunction && filterRef.current) {
@@ -435,6 +441,14 @@ export default function SoundGenerator({
         filterRef.current.dispose();
         filterRef.current = null;
       }
+      if (gainRef.current) {
+        gainRef.current.dispose();
+        gainRef.current = null;
+      }
+      if (reverbRef.current) {
+        reverbRef.current.dispose();
+        reverbRef.current = null;
+      }
     };
   }, [
     synthRef.current,
@@ -447,6 +461,15 @@ export default function SoundGenerator({
     stretch,
     memoizedFunctions,
   ]);
+
+    // Respond to changes in gain by updating Tone.Gain
+    useEffect(() => {
+      if (gainRef.current) {
+        // You can do immediate assignment or a slight ramp:
+        // gainRef.current.gain.value = gain;
+        gainRef.current.gain.rampTo(gain, 0.1); // smooth transitions over 0.1s
+      }
+    }, [gain]);
 
   // Trigger the note
   useEffect(() => {
@@ -470,8 +493,8 @@ export default function SoundGenerator({
         transportTime = 0;
       } else if (["\\sqrt[3]{x}"].includes(baseEquation)) {
         duration = (32 * 60) / bpm;
-        transportTime = (Math.abs(transformX) % (1 / stretch)) * (60 / bpm); // offset looping rhythm depending on place in measure
-        // transportTime = 0;
+        // transportTime = (Math.abs(transformX) % (1 / stretch)) * (60 / bpm); // offset looping rhythm depending on place in measure
+        transportTime = 0;
       } else {
         duration = 0;
         transportTime = 0;

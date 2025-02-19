@@ -28,6 +28,8 @@ export default function Home() {
         p?: number;
       };
       graphId: string;
+      gain: number;
+      instrument: string;
       pointX: number | null;
     }[]
   >([]);
@@ -40,6 +42,7 @@ export default function Home() {
     h: number;
     k: number;
     p?: number;
+    instrument: string;
   } | null>(null);
 
   const calculatorRef = useRef<any>(null);
@@ -56,11 +59,13 @@ export default function Home() {
       p?: number;
     },
     isSubmit: boolean,
-    graphId: string
+    gain: number,
+    graphId: string,
+    instrument: string,
   ) => {
     setSubmittedEquations((prev) => [
       ...prev,
-      { equation, params, graphId, pointX: null },
+      { equation, params, graphId, instrument, gain: 0.5, pointX: null },
     ]);
   };
 
@@ -104,6 +109,7 @@ export default function Home() {
           h: eq.params.transformX,
           k: eq.params.transformY,
           p: eq.params.p,
+          instrument: eq.instrument,
         });
       }
     }
@@ -122,12 +128,14 @@ export default function Home() {
         transformY: number;
         p?: number;
       };
+      color: string;
+      instrument: string;
     }
   ) => {
     // Update the Desmos equation list state
     setEquations((prev) =>
       prev.map((eq) =>
-        eq.id === graphId ? { ...eq, latex: updatedData.equation } : eq
+        eq.id === graphId ? { ...eq, latex: updatedData.equation, color:updatedData.color } : eq
       )
     );
     // Update submittedEquations (for SoundGenerator and AnimationGenerator)
@@ -138,6 +146,8 @@ export default function Home() {
               ...eq,
               equation: updatedData.equation,
               params: updatedData.params,
+              instrument: updatedData.instrument,
+              color: updatedData.color,
             }
           : eq
       )
@@ -161,7 +171,7 @@ export default function Home() {
 
   return (
     <main className="w-screen h-screen flex flex-row bg-gray-100">
-      <div className="flex flex-col w-[85%]">
+      <div className="flex flex-col w-[73%]">
         <Calculator
           ref={calculatorRef}
           onEquationAdded={handleEquationAdded}
@@ -174,7 +184,7 @@ export default function Home() {
         />
       </div>
 
-      <div className="flex flex-col w-[15%] border-l">
+      <div className="flex flex-col w-[27%] border-l">
         <UI
           equations={equations}
           onRemoveEquation={handleEquationRemove}
@@ -190,6 +200,7 @@ export default function Home() {
           }
           isPlaying={isPlaying}
           setIsPlaying={setIsPlaying}
+          setEquations={setEquations}
         />
       </div>
     </main>

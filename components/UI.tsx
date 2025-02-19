@@ -20,6 +20,7 @@ import { EquationEntry } from "@/components/Calculator";
 
 interface Props {
   equations: EquationEntry[];
+  setEquations: Dispatch<SetStateAction<EquationEntry[]>>;
   onRemoveEquation: (graphId: string) => void;
   submittedEquations: {
     equation: string;
@@ -32,6 +33,8 @@ interface Props {
       p?: number;
     };
     graphId: string;
+    instrument: string;
+    gain: number;
     pointX: number | null;
   }[];
   setSubmittedEquations: React.Dispatch<
@@ -47,6 +50,8 @@ interface Props {
           p?: number;
         };
         graphId: string;
+        instrument: string;
+        gain: number;
         pointX: number | null;
       }[]
     >
@@ -66,13 +71,9 @@ export default function UI({
   selectedIndex,
   isPlaying,
   setIsPlaying,
+  setEquations,
 }: Props) {
   const [bpm, setBPM] = useState(120);
-  const [bpmInput, setBPMInput] = useState(120);
-
-  const handleBPMSubmit = () => {
-    setBPM(bpmInput);
-  };
 
   const handlePlay = async () => {
     if (Tone.getContext().state !== "running") {
@@ -251,52 +252,47 @@ export default function UI({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Single toggle button for play/stop */}
-      <div className="flex flex-row px-2 py-3">
+      <div className="flex flex-row items-start justify-end px-5 py-5">
+        {/* BPM Option Group: input on top, current BPM sign below */}
+        <div className="flex flex-col items-start mr-4">
+          <div className="bg-transparent text-black text-sm font-medium">
+            <p>BPM:</p>
+          </div>
+          <input
+            id="bpm-input"
+            type="number"
+            value={bpm}
+            onChange={(e) => setBPM(Number(e.target.value))}
+            className="mt-.5 w-20 px-1 py-1 text-lg border border-black bg-transparent"
+            placeholder="BPM"
+          />
+        </div>
+
+        {/* Play/Pause Button */}
         <button
           onClick={handleTogglePlay}
-          className="w-full px-4 py-2 bg-lime-600 text-white rounded hover:bg-lime-700 transition-colors flex items-center justify-center space-x-2"
+          className="h-[100px] w-[100px] bg-lime-300"
         >
           {isPlaying ? (
             // Stop Icon
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 fill-current"
+              className="h-full w-full"
               viewBox="0 0 24 24"
             >
-              <path d="M6 6h12v12H6z" />
+              <path d="M6 6h12v12H6z" fill="red" />
             </svg>
           ) : (
             // Play Icon
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 fill-current"
+              className="h-full w-full"
               viewBox="0 0 24 24"
             >
-              <path d="M8 5v14l11-7z" />
+              <path d="M8 5v14l11-7z" fill="red" />
             </svg>
           )}
         </button>
-      </div>
-
-      {/* BPM Input */}
-      <div className="flex flex-col px-2 py-1 space-y-2">
-        <div className="flex flex-row space-x-2">
-          <input
-            id="bpm-input"
-            type="number"
-            value={bpmInput}
-            onChange={(e) => setBPMInput(Number(e.target.value))}
-            className="w-20 px-1 py-1 text-sm border rounded focus:outline-none focus:ring focus:border-blue-300"
-          />
-          <button
-            onClick={handleBPMSubmit}
-            className="px-4 py-2 bg-lime-600 text-white rounded hover:bg-lime-700 transition-colors"
-          >
-            Set BPM
-          </button>
-        </div>
-        <p className="text-xs text-gray-600">Current BPM: {bpm}</p>
       </div>
 
       {/* EquationList */}
@@ -313,28 +309,52 @@ export default function UI({
             onSelectEquation(index);
           }}
           selectedIndex={selectedIndex}
+          onGainChange={(index, newGain) => {
+            // 1) Update the local equations array
+            setEquations((prev) => {
+              const updated = [...prev];
+              updated[index] = {
+                ...updated[index],
+                gain: newGain,
+              };
+              return updated;
+            });
+
+            // 2) Update the submittedEquations (so SoundGenerator sees the new gain)
+            const eq = equations[index];
+            if (!eq) return;
+
+            setSubmittedEquations((prev) =>
+              prev.map((item) =>
+                item.graphId === eq.id ? { ...item, gain: newGain } : item
+              )
+            );
+          }}
         />
       </div>
 
       {/* Sound Generators */}
       <div>
-        {submittedEquations.map(({ equation, params, graphId }, index) => {
-          const { domain, critical } = memoizedValues[index];
-          return (
-            <SoundGenerator
-              key={graphId}
-              equation={equation}
-              params={params}
-              graphId={graphId}
-              isPlaying={isPlaying}
-              bpm={bpm}
-              xStart={domain.xStart}
-              xEnd={domain.xEnd}
-              cpxValue={critical.cpx}
-              cpyValue={critical.cpy}
-            />
-          );
-        })}
+        {submittedEquations.map(
+          ({ equation, params, graphId, gain }, index) => {
+            const { domain, critical } = memoizedValues[index];
+            return (
+              <SoundGenerator
+                key={graphId}
+                equation={equation}
+                params={params}
+                graphId={graphId}
+                isPlaying={isPlaying}
+                bpm={bpm}
+                xStart={domain.xStart}
+                xEnd={domain.xEnd}
+                cpxValue={critical.cpx}
+                cpyValue={critical.cpy}
+                gain={gain}
+              />
+            );
+          }
+        )}
       </div>
 
       {/* Animation Generators */}

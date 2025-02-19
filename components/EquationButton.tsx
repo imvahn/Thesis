@@ -9,14 +9,16 @@ interface EquationButtonProps {
     h: number;
     k: number;
     p?: number;
+    instrument: string;
   }) => void;
   selectedEquation?: {
-    graphId: string;
     equationType: string;
     a: number;
     h: number;
     k: number;
     p?: number;
+    graphId: string;
+    instrument: string;
   } | null;
   onUpdate?: (params: {
     equationType: string;
@@ -25,6 +27,7 @@ interface EquationButtonProps {
     k: number;
     p?: number;
     graphId: string;
+    instrument: string;
   }) => void;
   isPlaying: boolean;
 }
@@ -33,9 +36,10 @@ export default function EquationButton({
   onSubmit,
   selectedEquation,
   onUpdate,
-  isPlaying
+  isPlaying,
 }: EquationButtonProps) {
   const [equationType, setEquationType] = useState("Polynomial");
+  const [instrument, setInstrument] = useState("Synth");
 
   const [aInput, setAInput] = useState("");
   const [hInput, setHInput] = useState("");
@@ -90,18 +94,44 @@ export default function EquationButton({
 
   const displayEquation = buildPreviewEquation();
 
+  const getInstrument = (type: string, pValue?: number): string => {
+    if (type === "Polynomial") {
+      if (pValue === 2) return "Kick";
+      if (pValue === 3) return "Snare";
+    }
+    switch (type) {
+      case "Logarithm":
+        return "Bass";
+      case "Exponential":
+        return "Snare";
+      case "Absolute Value":
+        return "Synth";
+      case "Rational":
+        return "Snare";
+      case "Square Root":
+        return "Guitar";
+      case "Cube Root":
+        return "Drum";
+      default:
+        return "Synth";
+    }
+  };
+
   const canSubmit = () => {
     if (Number.isNaN(parsedA) || parsedA === 0) {
       return false;
     }
-    if (equationType === "Polynomial" && Number.isNaN(parsedP) || Number(parsedP) > 3) {
+    if (
+      (equationType === "Polynomial" && Number.isNaN(parsedP)) ||
+      Number(parsedP) > 3
+    ) {
       return false;
     }
     return true;
   };
 
   const handleSubmit = () => {
-        // Prevent submission if sound is playing.
+    // Prevent submission if sound is playing.
     if (isPlaying) {
       alert("you cannot add equations while sound is playing!");
       return;
@@ -112,6 +142,12 @@ export default function EquationButton({
       );
       return;
     }
+
+    const instrument =
+      equationType === "Polynomial"
+        ? getInstrument(equationType, parsedP)
+        : getInstrument(equationType);
+
     const params = {
       equationType,
       a: parseOrNaN(aInput),
@@ -127,9 +163,13 @@ export default function EquationButton({
 
     // If in update mode (i.e. selectedEquation exists), call onUpdate; otherwise, call onSubmit
     if (selectedEquation && onUpdate) {
-      onUpdate({ ...params, graphId: selectedEquation.graphId });
+      onUpdate({
+        ...params,
+        graphId: selectedEquation.graphId,
+        instrument: instrument,
+      });
     } else {
-      onSubmit(params);
+      onSubmit({ ...params, instrument: instrument });
     }
   };
 
@@ -141,6 +181,7 @@ export default function EquationButton({
       setHInput(selectedEquation.h.toString());
       setKInput(selectedEquation.k.toString());
       setPInput(selectedEquation.p?.toString() || "");
+      setInstrument(selectedEquation.instrument);
     }
   }, [selectedEquation]);
 
@@ -173,12 +214,12 @@ export default function EquationButton({
           <option value="Square Root">Square Root</option>
           <option value="Cube Root">Cube Root</option>
         </select>
-
+        +{" "}
         <button
           onClick={handleSubmit}
-          className="px-3 py-1 bg-lime-600 text-white rounded hover:bg-lime-700 transition-colors"
+          className="px-4 py-2 bg-lime-600 text-white rounded hover:bg-lime-700 transition-colors text-lg"
         >
-          {selectedEquation ? "Update Equation" : "Add Equation"}{" "}
+          {selectedEquation ? "Update Equation" : "Add Equation"}
         </button>
       </div>
 
@@ -188,7 +229,7 @@ export default function EquationButton({
           <span className="text-red-500 font-semibold">a</span>
           <input
             type="text"
-            className="w-12 px-1 py-0.5 text-center border border-red-300 rounded focus:outline-none"
+            className="w-16 px-2 py-1 text-lg text-center border border-red-300 rounded focus:outline-none"
             value={aInput}
             onChange={(e) => setAInput(e.target.value)}
             placeholder="a"
@@ -199,7 +240,7 @@ export default function EquationButton({
           <span className="text-blue-500 font-semibold">h</span>
           <input
             type="text"
-            className="w-12 px-1 py-0.5 text-center border border-blue-300 rounded focus:outline-none"
+            className="w-16 px-2 py-1 text-lg text-center border border-blue-300 rounded focus:outline-none"
             value={hInput}
             onChange={(e) => setHInput(e.target.value)}
             placeholder="h"
@@ -210,7 +251,7 @@ export default function EquationButton({
           <span className="text-purple-500 font-semibold">k</span>
           <input
             type="text"
-            className="w-12 px-1 py-0.5 text-center border border-purple-300 rounded focus:outline-none"
+            className="w-16 px-2 py-1 text-lg text-center border border-purple-300 rounded focus:outline-none"
             value={kInput}
             onChange={(e) => setKInput(e.target.value)}
             placeholder="k"
@@ -222,7 +263,7 @@ export default function EquationButton({
             <span className="text-green-500 font-semibold">p</span>
             <input
               type="text"
-              className="w-12 px-1 py-0.5 text-center border border-green-300 rounded focus:outline-none"
+              className="w-16 px-2 py-1 text-lg text-center border border-green-300 rounded focus:outline-none"
               value={pInput}
               onChange={(e) => setPInput(e.target.value)}
               placeholder="p"

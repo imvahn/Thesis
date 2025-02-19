@@ -27,7 +27,7 @@ export type EquationEntry = {
   latex: string;
   color?: string;
   expressionIds: string[];
-  volume: number;
+  gain: number;
 };
 
 interface CalculatorProps {
@@ -46,7 +46,9 @@ interface CalculatorProps {
       p?: number;
     },
     isSubmit: boolean,
+    gain: number,
     graphId: string,
+    instrument: string
   ) => void;
 
   // Called when an equation is removed
@@ -64,6 +66,7 @@ interface CalculatorProps {
       p?: number;
     };
     graphId: string;
+    instrument: string;
     pointX: number | null;
   }[];
 
@@ -74,6 +77,7 @@ interface CalculatorProps {
     h: number;
     k: number;
     p?: number;
+    instrument: string;
   } | null;
 
   onEquationUpdate: (
@@ -88,6 +92,8 @@ interface CalculatorProps {
         transformY: number;
         p?: number;
       };
+      instrument: string;
+      color: string;
     }
   ) => void;
   isPlaying: boolean;
@@ -196,6 +202,29 @@ function Calculator(
     }
   }
 
+  const getInstrument = (type: string, pValue?: number): string => {
+    if (type === "Polynomial") {
+      if (pValue === 2) return "Kick";
+      if (pValue === 3) return "Snare";
+    }
+    switch (type) {
+      case "Logarithm":
+        return "Bass";
+      case "Exponential":
+        return "Snare";
+      case "Absolute Value":
+        return "Synth";
+      case "Rational":
+        return "Snare";
+      case "Square Root":
+        return "Guitar";
+      case "Cube Root":
+        return "Drum";
+      default:
+        return "Synth";
+    }
+  };
+
   // Called by <EquationButton> when user hits "Add Equation"
   const handleEquationSubmitFromButton = (newParams: {
     equationType: string;
@@ -203,8 +232,33 @@ function Calculator(
     h: number;
     k: number;
     p?: number;
+    instrument: string;
   }) => {
     if (!calculatorInstance.current) return;
+
+    let color: string;
+    switch (newParams.instrument) {
+      case "Guitar":
+        color = "red";
+        break;
+      case "Sub":
+        color = "darkblue";
+        break;
+      case "Kick":
+        color = "orange";
+        break;
+      case "Snare":
+        color = "yellow";
+        break;
+      case "Bass":
+        color = "purple";
+        break;
+      case "Synth":
+        color = "brown";
+        break;
+      default:
+        color = "black";
+    }
 
     // 1) build the baseEquation
     const baseEquation = mapEquationTypeToBaseEquation(
@@ -262,31 +316,26 @@ function Calculator(
       id: exprIds.pointId,
       latex: `(x_{${graphId}}, y_{${graphId}})`,
       showLabel: false,
+      color: color,
     });
 
     // (E) final transformed equation
     calc.setExpression({
       id: exprIds.graphId,
       latex: `y=${finalEquation}`,
+      color: color,
     });
 
-    // 6) figure out the color from the newly inserted expression
-    const expressions = calc.getExpressions();
-    const matchingExpr = expressions.find(
-      (expr) => expr.id === exprIds.graphId
-    );
-    const color = matchingExpr?.color;
-
-    // 7) Tell the parent that we created a new Desmos equation
+    // Tell the parent that we created a new Desmos equation
     onEquationAdded({
       id: graphId,
       latex: finalEquation,
       color,
       expressionIds: Object.values(exprIds),
-      volume: 0.5
+      gain: 0.5,
     });
 
-    // 8) Also notify the parent so it can create a SoundGenerator entry
+    // Also notify the parent so it can create a SoundGenerator entry
     onEquationSubmit(
       finalEquation,
       {
@@ -298,7 +347,9 @@ function Calculator(
         p: newParams.p,
       },
       true,
+      0.5,
       graphId,
+      newParams.instrument
     );
   };
 
@@ -309,10 +360,39 @@ function Calculator(
     k: number;
     p?: number;
     graphId: string;
+    instrument: string;
   }) => {
     if (!calculatorInstance.current) return;
 
-    // Build the base and final equations just like in submission
+    const newInstrument =
+   updatedParams.equationType === "Polynomial"
+     ? getInstrument(updatedParams.equationType, updatedParams.p)
+     : getInstrument(updatedParams.equationType);
+
+    let color: string;
+    switch (newInstrument) {
+      case "Guitar":
+        color = "red";
+        break;
+      case "Sub":
+        color = "darkblue";
+        break;
+      case "Kick":
+        color = "orange";
+        break;
+      case "Snare":
+        color = "yellow";
+        break;
+      case "Bass":
+        color = "purple";
+        break;
+      case "Synth":
+        color = "brown";
+        break;
+      default:
+        color = "black";
+    }
+
     const baseEquation = mapEquationTypeToBaseEquation(
       updatedParams.equationType,
       updatedParams.p
@@ -363,12 +443,14 @@ function Calculator(
       id: exprIds.pointId,
       latex: `(x_{${graphId}}, y_{${graphId}})`,
       showLabel: false,
+      color: color,
     });
 
     // (E) final transformed equation
     calc.setExpression({
       id: exprIds.graphId,
       latex: `y=${finalEquation}`,
+      color: color,
     });
 
     // Call the parent’s update callback so the UI (and Sound/Animation generators) update accordingly
@@ -382,6 +464,8 @@ function Calculator(
         transformY: updatedParams.k,
         p: updatedParams.p,
       },
+      instrument: newInstrument,
+      color: color,
     });
   };
 
@@ -405,7 +489,7 @@ function Calculator(
       <div
         ref={calculatorRef}
         className="bg-white"
-        style={{ width: "85vw", height: "95vh" }}
+        style={{ width: "100%", height: "95vh" }}
       />
 
       {/* EquationButton to add new equations */}
