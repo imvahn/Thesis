@@ -38,6 +38,7 @@ export default function SoundGenerator({
   const synthRef = useRef<Tone.FMSynth | null>(null);
   const samplerRef = useRef<Tone.Sampler | null>(null);
   const filterRef = useRef<Tone.Filter | null>(null);
+  const ringRef = useRef<Tone.FrequencyShifter | null>(null);
   const gainRef = useRef<Tone.Gain | null>(null);
   const reverbRef = useRef<Tone.Reverb | null>(null);
   const LFORef = useRef<Tone.LFO | null>(null);
@@ -137,7 +138,6 @@ export default function SoundGenerator({
     };
   };
 
-
   const computeCutoff = (
     func: (t: number) => number
   ): ((x: number) => number) => {
@@ -169,12 +169,55 @@ export default function SoundGenerator({
     };
   };
 
+const yToRingFrequency = (y: number, yMin: number, yMax: number): number => {
+  const minFreq = 1;
+  const maxFreq = 2000;
+  // Normalize y from the range [-12, 12] to [0, 1]
+  const normalized = (y - yMin) / (yMax - yMin);
+  // Exponentially interpolate between minFreq and maxFreq
+  return minFreq * Math.pow(maxFreq / minFreq, normalized);
+};
+
+const computeRing = (func: (t: number) => number) => {
+  return (x: number): number => {
+    if (xStart === null || xEnd === null) return 0;
+    // Map x from [-1, 1] to [xStart, xEnd]
+    const t = ((x + 1) / 2) * (xEnd - xStart) + xStart;
+    const yVal = func(t);
+    // Compute the endpoints
+    const yValStart = func(xStart);
+    const yValEnd = func(xEnd);
+    const yMin = Math.min(yValStart, yValEnd);
+    const yMax = Math.max(yValStart, yValEnd);
+    if (!isFinite(yVal) || !isFinite(yMin) || !isFinite(yMax)) return 0;
+    return yToRingFrequency(yVal, yMin, yMax);
+  };
+};
+
+const computeRingExp = (func: (t: number) => number) => {
+  return (x: number): number => {
+    if (xStart === null || xEnd === null) return 0;
+    // For exponential functions, map x from [-1, 1] to [xStart, 16]
+    const t = ((x + 1) / 2) * (16 - xStart) + xStart;
+    const yVal = func(t);
+    if (t > xEnd) return 0;
+    const yValStart = func(xStart);
+    const yValEnd = func(xEnd);
+    const yMin = Math.min(yValStart, yValEnd);
+    const yMax = Math.max(yValStart, yValEnd);
+    if (!isFinite(yVal) || !isFinite(yMin) || !isFinite(yMax)) return 0;
+    return yToRingFrequency(yVal, yMin, yMax);
+  };
+};
+
+
   // Compute memoized functions and values for LFO and function calculations
   const memoizedFunctions = useMemo(() => {
     let computedPhase = 0;
     let computedBaseFunc = (t: number) => t;
     let computedCutoffFunction: ((x: number) => number) | null = null;
     let computedFrequencyFunction: ((x: number) => number) | null = null;
+    let computedRingFunction: ((x: number) => number) | null = null;
 
     switch (baseEquation) {
       case "x^{2}":
@@ -216,7 +259,7 @@ export default function SoundGenerator({
       case "e^{x}":
         computedPhase = 180;
         computedBaseFunc = (t: number) => stretch * Math.exp(t) + transformY;
-        computedFrequencyFunction = computeFrequencyExp(computedBaseFunc);
+        computedRingFunction = computeRingExp(computedBaseFunc);
         break;
       case "2^{x}":
         computedPhase = 180;
@@ -240,6 +283,7 @@ export default function SoundGenerator({
       computedBaseFunc,
       computedCutoffFunction,
       computedFrequencyFunction,
+      computedRingFunction,
     };
   }, [baseEquation, stretch, transformY, xStart, xEnd, bpm]);
 
@@ -278,34 +322,39 @@ export default function SoundGenerator({
     if (!samplerRef.current) {
       if (baseEquation === "\\sqrt[3]{x}") {
         samplerRef.current = new Tone.Sampler({
-          urls: { A1: "A1new.mp3" },
+          urls: {
+            C3: "A1new.mp3"
+          },
           baseUrl: "/api/samples/",
-          attack: 0.1,
-          release: 0.1,
           onload: () => setSamplerLoaded(true),
         });
       } else if (baseEquation === "x^{2}") {
         samplerRef.current = new Tone.Sampler({
-          urls: { C3: "kick2.mp3" },
+          urls: {
+            C3: "kick2.mp3"
+          },
           baseUrl: "/api/samples/",
-          attack: 0.1,
-          release: 0.1,
           onload: () => setSamplerLoaded(true),
         });
       } else if (baseEquation === "x^{3}") {
         samplerRef.current = new Tone.Sampler({
-          urls: { C3: "snare.mp3" },
-          baseUrl: "https://tonejs.github.io/audio/loop/",
-          attack: 0.1,
-          release: 0.1,
+          urls: {
+            C3: "Snare.mp3"
+          },
+          baseUrl: "/api/samples/",
+          onload: () => setSamplerLoaded(true),
+        });
+      } else if (baseEquation === "e^{x}") {
+        samplerRef.current = new Tone.Sampler({
+          urls: {
+            C3: "LongC.mp3"
+          },
+          baseUrl: "/api/samples/",
           onload: () => setSamplerLoaded(true),
         });
       } else {
         samplerRef.current = new Tone.Sampler({
-          urls: { C3: "snare.mp3" },
-          baseUrl: "https://tonejs.github.io/audio/loop/",
-          attack: 0.1,
-          release: 0.1,
+          baseUrl: "https://tonejs.github.io/audio/loop/snare.mp3",
           onload: () => setSamplerLoaded(true),
         });
       }
@@ -326,8 +375,8 @@ export default function SoundGenerator({
           oscillator: { type: "sine" },
           envelope: {
             attack: 0.1,
-            release: 1
-          }
+            release: 1,
+          },
         });
         Tone.getTransport().bpm.value = bpm;
         Tone.getTransport().start("+0.1");
@@ -339,6 +388,9 @@ export default function SoundGenerator({
       }
       Tone.getTransport().stop();
       Tone.getTransport().cancel(0);
+      if (samplerRef.current) {
+        samplerRef.current.releaseAll();
+      }
     }
     return () => {
       if (synthRef.current) {
@@ -366,9 +418,17 @@ export default function SoundGenerator({
       });
       reverbRef.current = new Tone.Reverb();
       gainRef.current = new Tone.Gain(gain).toDestination();
-      samplerRef.current.connect(filterRef.current);
-      synthRef.current.connect(filterRef.current);
-      filterRef.current.connect(reverbRef.current);
+      if (baseEquation === "e^{x}") {
+        ringRef.current = new Tone.FrequencyShifter({
+          frequency: 1,
+        });
+        samplerRef.current.connect(ringRef.current);
+        ringRef.current.connect(reverbRef.current);
+      } else {
+        samplerRef.current.connect(filterRef.current);
+        synthRef.current.connect(filterRef.current);
+        filterRef.current.connect(reverbRef.current);
+      }
       reverbRef.current.connect(gainRef.current);
       // reverbRef.current.toDestination();
       // Setup LFO based on computed memoized functions
@@ -406,9 +466,6 @@ export default function SoundGenerator({
           case "\\ln{x}":
             lfoFrequency = (bpm / 60) * (1 / (16 - transformX));
             break;
-          case "e^{x}":
-            lfoFrequency = bpm / (60 * 32);
-            break;
           case "2^{x}":
             lfoFrequency = (bpm / 60) * (1 / (xEnd - xStart));
             break;
@@ -426,6 +483,14 @@ export default function SoundGenerator({
             lfoFrequency
           );
         }
+      } else if (memoizedFunctions.computedRingFunction && ringRef.current) {
+        const lfoFrequency = bpm / (60 * 32);
+        setupLFO(
+          memoizedFunctions.computedRingFunction,
+          memoizedFunctions.computedPhase,
+          ringRef.current.frequency,
+          lfoFrequency
+        );
       }
     }
     return () => {
@@ -440,6 +505,10 @@ export default function SoundGenerator({
       if (filterRef.current) {
         filterRef.current.dispose();
         filterRef.current = null;
+      }
+      if (ringRef.current) {
+        ringRef.current.dispose();
+        ringRef.current = null;
       }
       if (gainRef.current) {
         gainRef.current.dispose();
@@ -462,14 +531,13 @@ export default function SoundGenerator({
     memoizedFunctions,
   ]);
 
-    // Respond to changes in gain by updating Tone.Gain
-    useEffect(() => {
-      if (gainRef.current) {
-        // You can do immediate assignment or a slight ramp:
-        // gainRef.current.gain.value = gain;
-        gainRef.current.gain.rampTo(gain, 0.1); // smooth transitions over 0.1s
-      }
-    }, [gain]);
+  // Respond to changes in gain by updating Tone.Gain
+  useEffect(() => {
+    if (gainRef.current) {
+      // gainRef.current.gain.value = gain;
+      gainRef.current.gain.rampTo(gain, 0.1); // smooth transitions over 0.1s
+    }
+  }, [gain]);
 
   // Trigger the note
   useEffect(() => {
@@ -493,8 +561,7 @@ export default function SoundGenerator({
         transportTime = 0;
       } else if (["\\sqrt[3]{x}"].includes(baseEquation)) {
         duration = (32 * 60) / bpm;
-        // transportTime = (Math.abs(transformX) % (1 / stretch)) * (60 / bpm); // offset looping rhythm depending on place in measure
-        transportTime = 0;
+        transportTime = (Math.abs(transformX) % (1 / stretch)) * (60 / bpm); // offset looping rhythm depending on place in measure
       } else {
         duration = 0;
         transportTime = 0;
@@ -518,11 +585,7 @@ export default function SoundGenerator({
               // const interval = (1 / Math.abs(stretch)) * (60 / bpm);
               // const id = Tone.getTransport().scheduleRepeat(
               //   (time) => {
-              //     samplerRef.current?.triggerAttackRelease(
-              //       note,
-              //       interval,
-              //       time
-              //     );
+              //     samplerRef.current?.start(note, interval, time);
               //     currentStep++;
               //     if (currentStep >= STEPS) Tone.getTransport().clear(id);
               //   },
@@ -531,7 +594,11 @@ export default function SoundGenerator({
               //   (32 * 60) / bpm
               // );
               synthRef.current?.triggerAttackRelease(note, duration, time);
-            } else if (baseEquation === "x^{2}" || baseEquation === "x^{3}") {
+            } else if (
+              baseEquation === "x^{2}" ||
+              baseEquation === "x^{3}" ||
+              baseEquation === "e^{x}"
+            ) {
               samplerRef.current?.triggerAttackRelease(note, duration, time);
             } else {
               // console.log(note,duration,transportTime);

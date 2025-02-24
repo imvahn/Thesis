@@ -65,7 +65,7 @@ export default function Home() {
   ) => {
     setSubmittedEquations((prev) => [
       ...prev,
-      { equation, params, graphId, instrument, gain: 0.5, pointX: null },
+      { equation, params, graphId, instrument, gain: 5, pointX: null },
     ]);
   };
 

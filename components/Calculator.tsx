@@ -332,7 +332,7 @@ function Calculator(
       latex: finalEquation,
       color,
       expressionIds: Object.values(exprIds),
-      gain: 0.5,
+      gain: 5,
     });
 
     // Also notify the parent so it can create a SoundGenerator entry
@@ -347,7 +347,7 @@ function Calculator(
         p: newParams.p,
       },
       true,
-      0.5,
+      5,
       graphId,
       newParams.instrument
     );

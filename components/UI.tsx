@@ -193,7 +193,7 @@ export default function UI({
         break;
       }
       case "e^{x}": {
-        const thresholdX = Math.log(12 / Math.abs(stretch));
+        const thresholdX = Math.log((12 - transformY) / Math.abs(stretch));
         const upperBound = Math.min(thresholdX, 16 - transformX);
         x1 = -16 - transformX;
         x2 = upperBound;
@@ -240,16 +240,6 @@ export default function UI({
     });
   }, [submittedEquations, isPlaying]);
 
-  // Load all samples on mount
-  useEffect(() => {
-    fetch("/api/load-samples")
-      .then((res) => res.json())
-      .then(() => {
-        console.log("loaded samples");
-      })
-      .catch((err) => console.error(err));
-  }, []);
-
   return (
     <div className="flex flex-col h-full">
       <div className="flex flex-row items-start justify-end px-5 py-5">
@@ -271,7 +261,7 @@ export default function UI({
         {/* Play/Pause Button */}
         <button
           onClick={handleTogglePlay}
-          className="h-[100px] w-[100px] bg-lime-300"
+          className="h-[100px] w-[100px] bg-lime-200 "
         >
           {isPlaying ? (
             // Stop Icon
@@ -280,7 +270,7 @@ export default function UI({
               className="h-full w-full"
               viewBox="0 0 24 24"
             >
-              <path d="M6 6h12v12H6z" fill="red" />
+              <path d="M6 6h12v12H6z" fill="black" />
             </svg>
           ) : (
             // Play Icon
@@ -289,7 +279,7 @@ export default function UI({
               className="h-full w-full"
               viewBox="0 0 24 24"
             >
-              <path d="M8 5v14l11-7z" fill="red" />
+              <path d="M8 5v14l11-7z" fill="black" />
             </svg>
           )}
         </button>

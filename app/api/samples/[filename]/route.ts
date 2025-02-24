@@ -1,24 +1,53 @@
-import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { samplesTable } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { NextResponse } from 'next/server';
+import mysql from 'mysql2/promise';
 
-export async function GET(request: Request, { params }: any) {
+export async function GET(
+  request: Request,
+  { params }: any
+) {
   const { filename } = await params;
+  let connection;
 
-  // Query the sample by name (adjust as needed if using a different identifier)
-  const result = await db
-    .select()
-    .from(samplesTable)
-    .where(eq(samplesTable.name, filename));
+  try {
+    // Connect to the MySQL database.
+    connection = await mysql.createConnection({
+      host: 'localhost',
+      port: 8080,
+      user: 'root',
+      password: 'password',
+      database: 'samples_db',
+    });
 
-  if (!result || result.length === 0) {
-    return NextResponse.json({ error: "Sample not found" }, { status: 404 });
+    // Query to get the file's data.
+    const [rows] = await connection.execute(
+      'SELECT filedata FROM audio_files WHERE filename = ?',
+      [filename]
+    );
+
+    if (!rows || (rows as any[]).length === 0) {
+      return NextResponse.json(
+        { error: 'File not found' },
+        { status: 404 }
+      );
+    }
+
+    // Assuming the query returns one result.
+    const fileData = (rows as any)[0].filedata;
+
+    return new NextResponse(fileData, {
+      status: 200,
+      headers: {
+        'Content-Type': 'audio/mpeg',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching file:', error);
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 }
+    );
+  } finally {
+    if (connection) await connection.end();
   }
-  const sample = result[0].sample as Buffer;
-  return new Response(sample, {
-    headers: {
-      "Content-Type": "audio/mpeg",
-    },
-  });
 }
