@@ -169,47 +169,120 @@ export default function SoundGenerator({
     };
   };
 
-const yToRingFrequency = (y: number, yMin: number, yMax: number): number => {
-  const minFreq = 1;
-  const maxFreq = 2000;
-  // Normalize y from the range [-12, 12] to [0, 1]
-  const normalized = (y - yMin) / (yMax - yMin);
-  // Exponentially interpolate between minFreq and maxFreq
-  return minFreq * Math.pow(maxFreq / minFreq, normalized);
-};
-
-const computeRing = (func: (t: number) => number) => {
-  return (x: number): number => {
-    if (xStart === null || xEnd === null) return 0;
-    // Map x from [-1, 1] to [xStart, xEnd]
-    const t = ((x + 1) / 2) * (xEnd - xStart) + xStart;
-    const yVal = func(t);
-    // Compute the endpoints
-    const yValStart = func(xStart);
-    const yValEnd = func(xEnd);
-    const yMin = Math.min(yValStart, yValEnd);
-    const yMax = Math.max(yValStart, yValEnd);
-    if (!isFinite(yVal) || !isFinite(yMin) || !isFinite(yMax)) return 0;
-    return yToRingFrequency(yVal, yMin, yMax);
+  const yToRingFrequency = (y: number, yMin: number, yMax: number): number => {
+    const minFreq = 1;
+    const maxFreq = 2000;
+    // Normalize y from the range [-12, 12] to [0, 1]
+    const normalized = (y - yMin) / (yMax - yMin);
+    // Exponentially interpolate between minFreq and maxFreq
+    return minFreq * Math.pow(maxFreq / minFreq, normalized);
   };
-};
 
-const computeRingExp = (func: (t: number) => number) => {
-  return (x: number): number => {
-    if (xStart === null || xEnd === null) return 0;
-    // For exponential functions, map x from [-1, 1] to [xStart, 16]
-    const t = ((x + 1) / 2) * (16 - xStart) + xStart;
-    const yVal = func(t);
-    if (t > xEnd) return 0;
-    const yValStart = func(xStart);
-    const yValEnd = func(xEnd);
-    const yMin = Math.min(yValStart, yValEnd);
-    const yMax = Math.max(yValStart, yValEnd);
-    if (!isFinite(yVal) || !isFinite(yMin) || !isFinite(yMax)) return 0;
-    return yToRingFrequency(yVal, yMin, yMax);
+  const computeRing = (func: (t: number) => number) => {
+    return (x: number): number => {
+      if (xStart === null || xEnd === null) return 0;
+      // Map x from [-1, 1] to [xStart, xEnd]
+      const t = ((x + 1) / 2) * (xEnd - xStart) + xStart;
+      const yVal = func(t);
+      // Compute the endpoints
+      const yValStart = func(xStart);
+      const yValEnd = func(xEnd);
+      const yMin = Math.min(yValStart, yValEnd);
+      const yMax = Math.max(yValStart, yValEnd);
+      if (!isFinite(yVal) || !isFinite(yMin) || !isFinite(yMax)) return 0;
+      return yToRingFrequency(yVal, yMin, yMax);
+    };
   };
-};
 
+  const computeRingExp = (func: (t: number) => number) => {
+    return (x: number): number => {
+      if (xStart === null || xEnd === null) return 0;
+      const t = ((x + 1) / 2) * (16 - xStart) + xStart;
+      const yVal = func(t);
+      if (t > xEnd) return 0;
+      const yValStart = func(xStart);
+      const yValEnd = func(xEnd);
+      const yMin = Math.min(yValStart, yValEnd);
+      const yMax = Math.max(yValStart, yValEnd);
+      if (!isFinite(yVal) || !isFinite(yMin) || !isFinite(yMax)) return 0;
+      return yToRingFrequency(yVal, yMin, yMax);
+    };
+  };
+
+  const calculateTransportTime = (equation: string): number => {
+    switch (equation) {
+      case "x^{2}":
+        return ((transformX + 16) * 60) / bpm;
+      case "x^{3}":
+        return ((transformX + 16) * 60) / bpm;
+      case "\\left|x\\right|":
+        return ((transformX + 16) * 60) / bpm;
+      case "\\sqrt[3]{x}":
+        return (Math.abs(transformX) % (1 / stretch)) * (60 / bpm); // offset looping rhythm depending on place in measure
+      case "\\sqrt[2]{x}":
+        return ((transformX + 16) * 60) / bpm;
+      case "\\ln{x}":
+        return ((transformX + 16) * 60) / bpm;
+      case "e^{x}":
+        return 0;
+      case "2^{x}":
+        return 0;
+      case "\\frac{1}{x}":
+        return 0;
+      default:
+        return 0;
+    }
+  };
+
+  const calculateDuration = (equation: string): number => {
+    switch (equation) {
+      case "x^{2}":
+        return (1 / Math.abs(stretch)) * (60 / bpm);
+      case "x^{3}":
+        return (1 / Math.abs(stretch)) * (60 / bpm);
+      case "\\left|x\\right|":
+        return (1 / Math.abs(stretch)) * (60 / bpm);
+      case "\\sqrt[3]{x}":
+        return (32 * 60) / bpm;
+      case "\\sqrt[2]{x}":
+        return ((16 - transformX) * 60) / bpm;
+      case "\\ln{x}":
+        return ((16 - transformX) * 60) / bpm;
+      case "e^{x}":
+        return ((xEnd! - xStart!) * 60) / bpm;
+      case "2^{x}":
+        return ((xEnd! - xStart!) * 60) / bpm;
+      case "\\frac{1}{x}":
+        return ((xEnd! - xStart!) * 60) / bpm;
+      default:
+        return 0;
+    }
+  };
+
+  const calculateLFOFrequency = (equation: string): number => {
+    switch (equation) {
+      case "x^{2}":
+        return (60 / bpm) * Math.abs(stretch);
+      case "x^{3}":
+        return (60 / bpm) * Math.abs(stretch);
+      case "\\left|x\\right|":
+        return (60 / bpm) * Math.abs(stretch);
+      case "\\sqrt[3]{x}":
+        return bpm / (60 * 32);
+      case "\\sqrt[2]{x}":
+        return (bpm / 60) * (1 / (16 - transformX));
+      case "\\ln{x}":
+        return (bpm / 60) * (1 / (16 - transformX));
+      case "e^{x}":
+        return bpm / (60 * 32);
+      case "2^{x}":
+        return (bpm / 60) * (1 / (xEnd! - xStart!));
+      case "\\frac{1}{x}":
+        return bpm / (60 * 32);
+      default:
+        return 0;
+    }
+  };
 
   // Compute memoized functions and values for LFO and function calculations
   const memoizedFunctions = useMemo(() => {
@@ -254,7 +327,7 @@ const computeRingExp = (func: (t: number) => number) => {
           if (t <= 0) return stretch * Number.EPSILON + transformY;
           return stretch * Math.log(t) + transformY;
         };
-        computedFrequencyFunction = computeFrequency(computedBaseFunc);
+        computedRingFunction = computeRing(computedBaseFunc);
         break;
       case "e^{x}":
         computedPhase = 180;
@@ -295,14 +368,7 @@ const computeRingExp = (func: (t: number) => number) => {
     frequency: number
   ) {
     // console.log("setting up lfo");
-    let transportTime: number;
-    if (
-      ["e^{x}", "2^{x}", "\\frac{1}{x}", "\\sqrt[3]{x}"].includes(baseEquation)
-    ) {
-      transportTime = 0;
-    } else {
-      transportTime = ((transformX + 16) * 60) / bpm;
-    }
+    const transportTime = calculateTransportTime(baseEquation);
     const lfo = new Tone.LFO({
       frequency,
       min: -1,
@@ -323,7 +389,7 @@ const computeRingExp = (func: (t: number) => number) => {
       if (baseEquation === "\\sqrt[3]{x}") {
         samplerRef.current = new Tone.Sampler({
           urls: {
-            C3: "A1new.mp3"
+            C3: "A1new.mp3",
           },
           baseUrl: "/api/samples/",
           onload: () => setSamplerLoaded(true),
@@ -331,7 +397,7 @@ const computeRingExp = (func: (t: number) => number) => {
       } else if (baseEquation === "x^{2}") {
         samplerRef.current = new Tone.Sampler({
           urls: {
-            C3: "kick2.mp3"
+            C3: "kick2.mp3",
           },
           baseUrl: "/api/samples/",
           onload: () => setSamplerLoaded(true),
@@ -339,7 +405,7 @@ const computeRingExp = (func: (t: number) => number) => {
       } else if (baseEquation === "x^{3}") {
         samplerRef.current = new Tone.Sampler({
           urls: {
-            C3: "Snare.mp3"
+            C3: "Snare.mp3",
           },
           baseUrl: "/api/samples/",
           onload: () => setSamplerLoaded(true),
@@ -347,7 +413,7 @@ const computeRingExp = (func: (t: number) => number) => {
       } else if (baseEquation === "e^{x}") {
         samplerRef.current = new Tone.Sampler({
           urls: {
-            C3: "LongC.mp3"
+            C3: "LongC.mp3",
           },
           baseUrl: "/api/samples/",
           onload: () => setSamplerLoaded(true),
@@ -422,74 +488,51 @@ const computeRingExp = (func: (t: number) => number) => {
         ringRef.current = new Tone.FrequencyShifter({
           frequency: 1,
         });
-        samplerRef.current.connect(ringRef.current);
-        ringRef.current.connect(reverbRef.current);
+        samplerRef.current.chain(
+          ringRef.current,
+          reverbRef.current,
+          gainRef.current
+        );
+        // ringRef.current.connect(reverbRef.current);
       } else {
-        samplerRef.current.connect(filterRef.current);
-        synthRef.current.connect(filterRef.current);
-        filterRef.current.connect(reverbRef.current);
+        samplerRef.current.chain(
+          filterRef.current,
+          reverbRef.current,
+          gainRef.current
+        );
+        synthRef.current.chain(
+          filterRef.current,
+          reverbRef.current,
+          gainRef.current
+        );
+        // filterRef.current.connect(reverbRef.current);
       }
-      reverbRef.current.connect(gainRef.current);
+      // reverbRef.current.connect(gainRef.current);
       // reverbRef.current.toDestination();
       // Setup LFO based on computed memoized functions
       if (memoizedFunctions.computedCutoffFunction && filterRef.current) {
-        let lfoFrequency = 0;
-        switch (baseEquation) {
-          case "x^{2}":
-          case "x^{3}":
-          case "\\left|x\\right|":
-            lfoFrequency = (60 / bpm) * Math.abs(stretch);
-            break;
-          case "\\sqrt[3]{x}":
-            lfoFrequency = bpm / (60 * 32);
-            break;
-          case "\\sqrt[2]{x}":
-            lfoFrequency = (bpm / 60) * (1 / (16 - transformX));
-            break;
-          default:
-            lfoFrequency = 0;
-        }
-        if (lfoFrequency !== 0) {
-          setupLFO(
-            memoizedFunctions.computedCutoffFunction,
-            memoizedFunctions.computedPhase,
-            filterRef.current.frequency,
-            lfoFrequency
-          );
-        }
+        setupLFO(
+          memoizedFunctions.computedCutoffFunction,
+          memoizedFunctions.computedPhase,
+          filterRef.current.frequency,
+          calculateLFOFrequency(baseEquation)
+        );
       } else if (
         memoizedFunctions.computedFrequencyFunction &&
         synthRef.current
       ) {
-        let lfoFrequency = 0;
-        switch (baseEquation) {
-          case "\\ln{x}":
-            lfoFrequency = (bpm / 60) * (1 / (16 - transformX));
-            break;
-          case "2^{x}":
-            lfoFrequency = (bpm / 60) * (1 / (xEnd - xStart));
-            break;
-          case "\\frac{1}{x}":
-            lfoFrequency = bpm / (60 * 32);
-            break;
-          default:
-            lfoFrequency = 0;
-        }
-        if (lfoFrequency !== 0) {
-          setupLFO(
-            memoizedFunctions.computedFrequencyFunction,
-            memoizedFunctions.computedPhase,
-            synthRef.current.frequency,
-            lfoFrequency
-          );
-        }
+        setupLFO(
+          memoizedFunctions.computedFrequencyFunction,
+          memoizedFunctions.computedPhase,
+          synthRef.current.frequency,
+          calculateLFOFrequency(baseEquation)
+        );
       } else if (memoizedFunctions.computedRingFunction && ringRef.current) {
-        const lfoFrequency = bpm / (60 * 32);
         setupLFO(
           memoizedFunctions.computedRingFunction,
           memoizedFunctions.computedPhase,
           ringRef.current.frequency,
-          lfoFrequency
+          calculateLFOFrequency(baseEquation)
         );
       }
     }
@@ -548,61 +591,44 @@ const computeRingExp = (func: (t: number) => number) => {
       xStart !== null &&
       xEnd !== null
     ) {
-      let duration = 0;
-      let transportTime = 0;
-      if (["x^{2}", "x^{3}", "\\left|x\\right|"].includes(baseEquation)) {
-        duration = (1 / Math.abs(stretch)) * (60 / bpm);
-        transportTime = ((transformX + 16) * 60) / bpm;
-      } else if (["\\ln{x}", "\\sqrt[2]{x}"].includes(baseEquation)) {
-        duration = ((16 - transformX) * 60) / bpm;
-        transportTime = ((transformX + 16) * 60) / bpm;
-      } else if (["e^{x}", "2^{x}", "\\frac{1}{x}"].includes(baseEquation)) {
-        duration = ((xEnd - xStart) * 60) / bpm;
-        transportTime = 0;
-      } else if (["\\sqrt[3]{x}"].includes(baseEquation)) {
-        duration = (32 * 60) / bpm;
-        transportTime = (Math.abs(transformX) % (1 / stretch)) * (60 / bpm); // offset looping rhythm depending on place in measure
-      } else {
-        duration = 0;
-        transportTime = 0;
-      }
+      const transportTime = calculateTransportTime(baseEquation);
+      const duration = calculateDuration(baseEquation);
 
       const yNum = parseFloat(cpyValue);
       if (!isNaN(yNum)) {
         let note: string;
         const yKey = Math.round(yNum).toString();
-        if (baseEquation === "x^{2}") {
-          note = bassKeyMap[yKey];
-        } else {
-          note = keyMap[yKey];
-        }
+        note = keyMap[yKey];
         if (note) {
           const loop = new Tone.Loop((time) => {
-            if (baseEquation === "\\sqrt[3]{x}") {
-              // // Repeated sound logic for this equation
-              // let currentStep = 0;
-              // const STEPS = 32 * stretch;
-              // const interval = (1 / Math.abs(stretch)) * (60 / bpm);
-              // const id = Tone.getTransport().scheduleRepeat(
-              //   (time) => {
-              //     samplerRef.current?.start(note, interval, time);
-              //     currentStep++;
-              //     if (currentStep >= STEPS) Tone.getTransport().clear(id);
-              //   },
-              //   interval,
-              //   undefined,
-              //   (32 * 60) / bpm
-              // );
-              synthRef.current?.triggerAttackRelease(note, duration, time);
-            } else if (
-              baseEquation === "x^{2}" ||
-              baseEquation === "x^{3}" ||
-              baseEquation === "e^{x}"
-            ) {
-              samplerRef.current?.triggerAttackRelease(note, duration, time);
-            } else {
-              // console.log(note,duration,transportTime);
-              synthRef.current?.triggerAttackRelease(note, duration, time);
+            switch (baseEquation) {
+              case "\\sqrt[3]{x}":
+                let currentStep = 0;
+                const STEPS = 32 * stretch;
+                const interval = (1 / Math.abs(stretch)) * (60 / bpm);
+                const id = Tone.getTransport().scheduleRepeat(
+                  (time) => {
+                    samplerRef.current?.triggerAttackRelease(
+                      note,
+                      interval,
+                      time
+                    );
+                    currentStep++;
+                    if (currentStep >= STEPS) Tone.getTransport().clear(id);
+                  },
+                  interval,
+                  undefined,
+                  duration
+                );
+                break;
+              case "x^{2}":
+              case "x^{3}":
+              case "e^{x}":
+                samplerRef.current?.triggerAttackRelease(note, duration, time);
+                break;
+              default:
+                synthRef.current?.triggerAttackRelease(note, duration, time);
+                break;
             }
           }, "8m").start(transportTime);
           loopRef.current = loop;

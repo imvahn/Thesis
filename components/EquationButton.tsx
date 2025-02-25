@@ -214,10 +214,9 @@ export default function EquationButton({
           <option value="Square Root">Square Root</option>
           <option value="Cube Root">Cube Root</option>
         </select>
-        +{" "}
         <button
           onClick={handleSubmit}
-          className="px-4 py-2 bg-lime-600 text-white rounded hover:bg-lime-700 transition-colors text-lg"
+          className="px-4 bg-lime-600 text-white rounded hover:bg-lime-700 transition-colors text-lg"
         >
           {selectedEquation ? "Update Equation" : "Add Equation"}
         </button>

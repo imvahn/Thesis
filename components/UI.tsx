@@ -13,6 +13,9 @@ import nerdamer from "nerdamer";
 import "nerdamer/Calculus";
 import "nerdamer/Algebra";
 import "nerdamer/Solve";
+import "katex/dist/katex.min.css";
+import { BlockMath } from "react-katex";
+import { Knob } from "primereact/knob";
 import EquationList from "@/components/EquationList";
 import SoundGenerator from "@/components/SoundGenerator";
 import AnimationGenerator from "@/components/AnimationGenerator";
@@ -64,6 +67,7 @@ interface Props {
 
 export default function UI({
   equations,
+  setEquations,
   onRemoveEquation,
   submittedEquations,
   setSubmittedEquations,
@@ -71,7 +75,6 @@ export default function UI({
   selectedIndex,
   isPlaying,
   setIsPlaying,
-  setEquations,
 }: Props) {
   const [bpm, setBPM] = useState(120);
 
@@ -139,7 +142,6 @@ export default function UI({
         cpxValue = d1.solveFor("x").toString();
         cpyValue = e.sub("x", cpxValue.toString()).evaluate().text();
       }
-      // console.log(baseEquation,cpxValue,cpyValue);
       return { cpx: cpxValue, cpy: cpyValue };
     }
   };
@@ -241,9 +243,10 @@ export default function UI({
   }, [submittedEquations, isPlaying]);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex flex-row items-start justify-end px-5 py-5">
-        {/* BPM Option Group: input on top, current BPM sign below */}
+    // 1) Use h-screen to occupy the full browser height
+    <div className="flex flex-col h-screen">
+      {/* Top toolbar (BPM & Play/Pause) */}
+      <div className="flex flex-row items-start justify-end px-5 py-5 border-black border-b-2">
         <div className="flex flex-col items-start mr-4">
           <div className="bg-transparent text-black text-sm font-medium">
             <p>BPM:</p>
@@ -253,15 +256,14 @@ export default function UI({
             type="number"
             value={bpm}
             onChange={(e) => setBPM(Number(e.target.value))}
-            className="mt-.5 w-20 px-1 py-1 text-lg border border-black bg-transparent"
+            className="mt-0.5 w-20 px-1 py-1 text-lg border border-black bg-transparent"
             placeholder="BPM"
           />
         </div>
-
         {/* Play/Pause Button */}
         <button
           onClick={handleTogglePlay}
-          className="h-[100px] w-[100px] bg-lime-200 "
+          className="h-[100px] w-[100px] bg-lime-200"
         >
           {isPlaying ? (
             // Stop Icon
@@ -285,8 +287,9 @@ export default function UI({
         </button>
       </div>
 
-      {/* EquationList */}
-      <div className="bg-white grow">
+      {/* 2) Scrollable area for everything below the header */}
+      <div className="flex-1 overflow-auto">
+        {/* EquationList first */}
         <EquationList
           equations={equations}
           onRemove={(index) => {
@@ -300,7 +303,7 @@ export default function UI({
           }}
           selectedIndex={selectedIndex}
           onGainChange={(index, newGain) => {
-            // 1) Update the local equations array
+            // 1) Update local equations array
             setEquations((prev) => {
               const updated = [...prev];
               updated[index] = {
@@ -309,11 +312,9 @@ export default function UI({
               };
               return updated;
             });
-
             // 2) Update the submittedEquations (so SoundGenerator sees the new gain)
             const eq = equations[index];
             if (!eq) return;
-
             setSubmittedEquations((prev) =>
               prev.map((item) =>
                 item.graphId === eq.id ? { ...item, gain: newGain } : item
@@ -321,13 +322,11 @@ export default function UI({
             );
           }}
         />
-      </div>
 
-      {/* Sound Generators */}
-      <div>
-        {submittedEquations.map(
-          ({ equation, params, graphId, gain }, index) => {
-            const { domain, critical } = memoizedValues[index];
+        {/* Sound Generators */}
+        <div>
+          {submittedEquations.map(({ equation, params, graphId, gain }, idx) => {
+            const { domain, critical } = memoizedValues[idx];
             return (
               <SoundGenerator
                 key={graphId}
@@ -343,30 +342,30 @@ export default function UI({
                 gain={gain}
               />
             );
-          }
-        )}
-      </div>
+          })}
+        </div>
 
-      {/* Animation Generators */}
-      <div>
-        {submittedEquations.map(({ equation, params, graphId }, index) => {
-          const { domain, critical } = memoizedValues[index];
-          return (
-            <AnimationGenerator
-              key={graphId}
-              equation={equation}
-              params={params}
-              graphId={graphId}
-              onPointXChange={handlePointXChange}
-              isPlaying={isPlaying}
-              bpm={bpm}
-              xStart={domain.xStart}
-              xEnd={domain.xEnd}
-              cpxValue={critical.cpx}
-              cpyValue={critical.cpy}
-            />
-          );
-        })}
+        {/* Animation Generators */}
+        <div>
+          {submittedEquations.map(({ equation, params, graphId }, idx) => {
+            const { domain, critical } = memoizedValues[idx];
+            return (
+              <AnimationGenerator
+                key={graphId}
+                equation={equation}
+                params={params}
+                graphId={graphId}
+                onPointXChange={handlePointXChange}
+                isPlaying={isPlaying}
+                bpm={bpm}
+                xStart={domain.xStart}
+                xEnd={domain.xEnd}
+                cpxValue={critical.cpx}
+                cpyValue={critical.cpy}
+              />
+            );
+          })}
+        </div>
       </div>
     </div>
   );
