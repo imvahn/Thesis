@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "katex/dist/katex.min.css";
-import { InlineMath } from "react-katex";
+import { BlockMath } from "react-katex";
+import { getInstrument } from "@/lib/equations"
 
 interface EquationButtonProps {
   onSubmit: (params: {
@@ -94,29 +95,6 @@ export default function EquationButton({
 
   const displayEquation = buildPreviewEquation();
 
-  const getInstrument = (type: string, pValue?: number): string => {
-    if (type === "Polynomial") {
-      if (pValue === 2) return "Kick";
-      if (pValue === 3) return "Snare";
-    }
-    switch (type) {
-      case "Logarithm":
-        return "Bass";
-      case "Exponential":
-        return "Snare";
-      case "Absolute Value":
-        return "Synth";
-      case "Rational":
-        return "Snare";
-      case "Square Root":
-        return "Guitar";
-      case "Cube Root":
-        return "Drum";
-      default:
-        return "Synth";
-    }
-  };
-
   const canSubmit = () => {
     if (Number.isNaN(parsedA) || parsedA === 0) {
       return false;
@@ -131,7 +109,6 @@ export default function EquationButton({
   };
 
   const handleSubmit = () => {
-    // Prevent submission if sound is playing.
     if (isPlaying) {
       alert("you cannot add equations while sound is playing!");
       return;
@@ -161,7 +138,6 @@ export default function EquationButton({
           : undefined,
     };
 
-    // If in update mode (i.e. selectedEquation exists), call onUpdate; otherwise, call onSubmit
     if (selectedEquation && onUpdate) {
       onUpdate({
         ...params,
@@ -173,7 +149,6 @@ export default function EquationButton({
     }
   };
 
-  // When a selected equation is provided, prefill the inputs
   useEffect(() => {
     if (selectedEquation) {
       setEquationType(selectedEquation.equationType);
@@ -187,7 +162,6 @@ export default function EquationButton({
 
   useEffect(() => {
     if (!selectedEquation) {
-      // Reset the form inputs
       setEquationType("Polynomial");
       setAInput("");
       setHInput("");
@@ -197,60 +171,70 @@ export default function EquationButton({
   }, [selectedEquation]);
 
   return (
-    <div className="w-full flex flex-row items-center text-sm bg-gray-200">
-      {/* Left side: select + button */}
-      <div className="flex flex-row items-center px-2 space-x-2">
-        <label className="font-medium text-gray-700">Type:</label>
-        <select
-          className="px-2 py-1 border border-gray-300 rounded bg-white focus:outline-none"
-          onChange={(e) => setEquationType(e.target.value)}
-          value={equationType}
-        >
-          <option value="Polynomial">Polynomial</option>
-          <option value="Logarithm">Logarithm</option>
-          <option value="Exponential">Exponential</option>
-          <option value="Absolute Value">Absolute Value</option>
-          <option value="Rational">Rational</option>
-          <option value="Square Root">Square Root</option>
-          <option value="Cube Root">Cube Root</option>
-        </select>
+    <div className="w-full flex flex-row items-center bg-white h-[10vh]">
+      {/* Left Section: Options Bar */}
+      <div className="flex flex-col items-center justify-center space-y-2 px-2">
+        <div className="flex flex-row items-center">
+          <label className="font-medium text-gray-700 mr-1">Type:</label>
+          <select
+            className="px-2 py-1 border border-gray-300 rounded bg-white focus:outline-none"
+            onChange={(e) => setEquationType(e.target.value)}
+            value={equationType}
+          >
+            <option value="Polynomial">Polynomial</option>
+            <option value="Logarithm">Logarithm</option>
+            <option value="Exponential">Exponential</option>
+            <option value="Absolute Value">Absolute Value</option>
+            <option value="Rational">Rational</option>
+            <option value="Square Root">Square Root</option>
+            <option value="Cube Root">Cube Root</option>
+          </select>
+        </div>
         <button
           onClick={handleSubmit}
-          className="px-4 bg-lime-600 text-white rounded hover:bg-lime-700 transition-colors text-lg"
+          className="px-4 bg-lime-500 text-white rounded transition-transform hover:scale-[103%] hover:rotate-[0.5deg] text-lg w-full"
         >
           {selectedEquation ? "Update Equation" : "Add Equation"}
         </button>
       </div>
 
-      {/* Right side: inputs + preview */}
-      <div className="flex flex-row flex-grow justify-end items-center space-x-2 px-2">
-        <label className="flex items-center space-x-1">
-          <span className="text-red-500 font-semibold">a</span>
+      {/* Center Section: Equation Preview */}
+      <div
+        className="flex flex-1 items-center justify-center"
+        style={{ fontSize: "2rem" }}
+      >
+        <BlockMath>{`f(x) = ${displayEquation}`}</BlockMath>
+      </div>
+
+      {/* Right Section: Input Fields */}
+      <div className="flex flex-row items-center space-x-2 px-2">
+        <label className="flex flex-col items-center space-x-1">
+          {/* <span className="text-red-500 font-semibold">a</span> */}
           <input
             type="text"
-            className="w-16 px-2 py-1 text-lg text-center border border-red-300 rounded focus:outline-none"
+            className="w-16 px-2 py-1 text-lg text-center border-2 border-red-300 rounded focus:outline-none transition-transform duration-200 hover:scale-105"
             value={aInput}
             onChange={(e) => setAInput(e.target.value)}
             placeholder="a"
           />
         </label>
 
-        <label className="flex items-center space-x-1">
-          <span className="text-blue-500 font-semibold">h</span>
+        <label className="flex flex-col items-center space-x-1">
+          {/* <span className="text-blue-500 font-semibold">h</span> */}
           <input
             type="text"
-            className="w-16 px-2 py-1 text-lg text-center border border-blue-300 rounded focus:outline-none"
+            className="w-16 px-2 py-1 text-lg text-center border-2 border-blue-300 rounded focus:outline-none transition-transform duration-200 hover:scale-105"
             value={hInput}
             onChange={(e) => setHInput(e.target.value)}
             placeholder="h"
           />
         </label>
 
-        <label className="flex items-center space-x-1">
-          <span className="text-purple-500 font-semibold">k</span>
+        <label className="flex flex-col items-center space-x-1">
+          {/* <span className="text-purple-500 font-semibold">k</span> */}
           <input
             type="text"
-            className="w-16 px-2 py-1 text-lg text-center border border-purple-300 rounded focus:outline-none"
+            className="w-16 px-2 py-1 text-lg text-center border-2 border-purple-300 rounded focus:outline-none transition-transform duration-200 hover:scale-105"
             value={kInput}
             onChange={(e) => setKInput(e.target.value)}
             placeholder="k"
@@ -258,22 +242,17 @@ export default function EquationButton({
         </label>
 
         {equationType === "Polynomial" && (
-          <label className="flex items-center space-x-1">
-            <span className="text-green-500 font-semibold">p</span>
+        <label className="flex flex-col items-center space-x-1">
+            {/* <span className="text-green-500 font-semibold">p</span> */}
             <input
               type="text"
-              className="w-16 px-2 py-1 text-lg text-center border border-green-300 rounded focus:outline-none"
+              className="w-16 px-2 py-1 text-lg text-center border-2 border-green-300 rounded focus:outline-none transition-transform duration-200 hover:scale-105"
               value={pInput}
               onChange={(e) => setPInput(e.target.value)}
               placeholder="p"
             />
           </label>
         )}
-
-        {/* Preview */}
-        <div className="text-base font-semibold text-gray-800">
-          <InlineMath>{`f(x) = ${displayEquation}`}</InlineMath>
-        </div>
       </div>
     </div>
   );

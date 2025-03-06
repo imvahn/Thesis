@@ -3,6 +3,7 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle, Ref } from "react";
 import Desmos from "desmos";
 import EquationButton from "@/components/EquationButton";
+import { getInstrument, getColor } from "@/lib/equations";
 
 interface DesmosCalculator {
   setExpression: (expression: {
@@ -202,29 +203,6 @@ function Calculator(
     }
   }
 
-  const getInstrument = (type: string, pValue?: number): string => {
-    if (type === "Polynomial") {
-      if (pValue === 2) return "Kick";
-      if (pValue === 3) return "Snare";
-    }
-    switch (type) {
-      case "Logarithm":
-        return "Bass";
-      case "Exponential":
-        return "Snare";
-      case "Absolute Value":
-        return "Synth";
-      case "Rational":
-        return "Snare";
-      case "Square Root":
-        return "Guitar";
-      case "Cube Root":
-        return "Drum";
-      default:
-        return "Synth";
-    }
-  };
-
   // Called by <EquationButton> when user hits "Add Equation"
   const handleEquationSubmitFromButton = (newParams: {
     equationType: string;
@@ -236,29 +214,7 @@ function Calculator(
   }) => {
     if (!calculatorInstance.current) return;
 
-    let color: string;
-    switch (newParams.instrument) {
-      case "Guitar":
-        color = "red";
-        break;
-      case "Sub":
-        color = "darkblue";
-        break;
-      case "Kick":
-        color = "orange";
-        break;
-      case "Snare":
-        color = "yellow";
-        break;
-      case "Bass":
-        color = "purple";
-        break;
-      case "Synth":
-        color = "brown";
-        break;
-      default:
-        color = "black";
-    }
+    const color = getColor(newParams.instrument);
 
     // 1) build the baseEquation
     const baseEquation = mapEquationTypeToBaseEquation(
@@ -369,29 +325,7 @@ function Calculator(
      ? getInstrument(updatedParams.equationType, updatedParams.p)
      : getInstrument(updatedParams.equationType);
 
-    let color: string;
-    switch (newInstrument) {
-      case "Guitar":
-        color = "red";
-        break;
-      case "Sub":
-        color = "darkblue";
-        break;
-      case "Kick":
-        color = "orange";
-        break;
-      case "Snare":
-        color = "yellow";
-        break;
-      case "Bass":
-        color = "purple";
-        break;
-      case "Synth":
-        color = "brown";
-        break;
-      default:
-        color = "black";
-    }
+    const color = getColor(updatedParams.instrument);
 
     const baseEquation = mapEquationTypeToBaseEquation(
       updatedParams.equationType,
@@ -489,7 +423,7 @@ function Calculator(
       <div
         ref={calculatorRef}
         className="bg-white"
-        style={{ width: "100%", height: "95vh" }}
+        style={{ width: "100%", height: "90vh" }}
       />
 
       {/* EquationButton to add new equations */}

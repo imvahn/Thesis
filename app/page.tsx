@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-
 import { EquationEntry } from "@/components/Calculator";
 import dynamic from "next/dynamic";
 const Calculator = dynamic(() => import("@/components/Calculator"), {
@@ -90,16 +89,12 @@ export default function Home() {
   // Called when a user clicks an equation in EquationList
   const handleEquationSelect = (index: number) => {
     if (selectedEquation) {
-      // If update mode is active and the clicked equation is different,
-      // exit update mode and unhighlight.
       if (submittedEquations[index].graphId !== selectedEquation.graphId) {
         setSelectedEquation(null);
       } else {
-        // If the same equation is clicked, toggle off (exit update mode)
         setSelectedEquation(null);
       }
     } else {
-      // Not in update mode—select this equation
       const eq = submittedEquations[index];
       if (eq) {
         setSelectedEquation({
@@ -132,13 +127,11 @@ export default function Home() {
       instrument: string;
     }
   ) => {
-    // Update the Desmos equation list state
     setEquations((prev) =>
       prev.map((eq) =>
-        eq.id === graphId ? { ...eq, latex: updatedData.equation, color:updatedData.color } : eq
+        eq.id === graphId ? { ...eq, latex: updatedData.equation, color: updatedData.color } : eq
       )
     );
-    // Update submittedEquations (for SoundGenerator and AnimationGenerator)
     setSubmittedEquations((prev) =>
       prev.map((eq) =>
         eq.graphId === graphId
@@ -152,7 +145,6 @@ export default function Home() {
           : eq
       )
     );
-    // Clear update mode and unhighlight the selected equation
     setSelectedEquation(null);
   };
 
@@ -161,7 +153,6 @@ export default function Home() {
     setEquations((prev) => [...prev, newEq]);
   };
 
-  // Compute the selected index from the selectedEquation
   const selectedIndex =
     selectedEquation !== null
       ? submittedEquations.findIndex(
@@ -170,7 +161,7 @@ export default function Home() {
       : null;
 
   return (
-    <main className="w-screen h-screen flex flex-row bg-gray-100">
+    <main className="w-screen h-screen overflow-hidden flex flex-row">
       <div className="flex flex-col w-[73%]">
         <Calculator
           ref={calculatorRef}
@@ -184,7 +175,7 @@ export default function Home() {
         />
       </div>
 
-      <div className="flex flex-col w-[27%] border-l">
+      <div className="flex flex-col w-[27%]">
         <UI
           equations={equations}
           onRemoveEquation={handleEquationRemove}

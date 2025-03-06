@@ -14,12 +14,12 @@ import "nerdamer/Calculus";
 import "nerdamer/Algebra";
 import "nerdamer/Solve";
 import "katex/dist/katex.min.css";
-import { BlockMath } from "react-katex";
-import { Knob } from "primereact/knob";
+
 import EquationList from "@/components/EquationList";
 import SoundGenerator from "@/components/SoundGenerator";
 import AnimationGenerator from "@/components/AnimationGenerator";
 import { EquationEntry } from "@/components/Calculator";
+import Slider from "@mui/material/Slider";
 
 interface Props {
   equations: EquationEntry[];
@@ -76,7 +76,8 @@ export default function UI({
   isPlaying,
   setIsPlaying,
 }: Props) {
-  const [bpm, setBPM] = useState(120);
+  const [bpm, setBPM] = useState(60);
+  const [flash, setFlash] = useState(false);
 
   const handlePlay = async () => {
     if (Tone.getContext().state !== "running") {
@@ -90,7 +91,8 @@ export default function UI({
     setIsPlaying(false);
   };
 
-  const handleTogglePlay = async () => {
+  // Wrap the play/stop toggle with a flash effect.
+  const handleButtonClick = async () => {
     if (isPlaying) {
       handleStop();
     } else {
@@ -245,46 +247,62 @@ export default function UI({
   return (
     // 1) Use h-screen to occupy the full browser height
     <div className="flex flex-col h-screen">
-      {/* Top toolbar (BPM & Play/Pause) */}
-      <div className="flex flex-row items-start justify-end px-5 py-5 border-black border-b-2">
-        <div className="flex flex-col items-start mr-4">
-          <div className="bg-transparent text-black text-sm font-medium">
-            <p>BPM:</p>
+      {/* Top toolbar (Tempo Slider & Play/Pause) */}
+      <div className="flex flex-col items-center justify-center px-5 py-5 border-gray-300 border-b-2">
+        <div className="flex flex-row items-center gap-8">
+          {/* Fixed-width container for the Tempo Slider group */}
+          <div className="w-56 flex flex-row items-center gap-2">
+            <span className="text-sm font-medium text-lime-700">tempo:</span>
+            <Slider
+              value={bpm}
+              min={40}
+              max={120}
+              onChange={(e, newValue) => {
+                if (typeof newValue === "number") setBPM(newValue);
+              }}
+              className="w-40 cursor-pointer"
+              sx={{
+                color: "#a3e635", // lime-400
+                // remove box shadow/highlight from all instances
+                "& .MuiSlider-thumb": {
+                  boxShadow: "none",
+                  "&:focus, &:hover, &.Mui-active": {
+                    boxShadow: "none",
+                  },
+                  "&:before": {
+                    boxShadow: "none",
+                  },
+                },
+              }}
+            />
+            <span className="text-lime-700 text-sm font-medium">{bpm}</span>
           </div>
-          <input
-            id="bpm-input"
-            type="number"
-            value={bpm}
-            onChange={(e) => setBPM(Number(e.target.value))}
-            className="mt-0.5 w-20 px-1 py-1 text-lg border border-black bg-transparent"
-            placeholder="BPM"
-          />
+          {/* Play/Pause Button */}
+          <button
+            onClick={handleButtonClick}
+            className="h-[100px] w-[100px] bg-lime-500 rounded transition-transform duration-300 hover:-rotate-1 hover:scale-105"
+          >
+            {isPlaying ? (
+              // Stop Icon
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-full w-full"
+                viewBox="0 0 24 24"
+              >
+                <path d="M6 6h12v12H6z" fill="white" />
+              </svg>
+            ) : (
+              // Play Icon
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-full w-full"
+                viewBox="0 0 24 24"
+              >
+                <path d="M8 5v14l11-7z" fill="white" />
+              </svg>
+            )}
+          </button>
         </div>
-        {/* Play/Pause Button */}
-        <button
-          onClick={handleTogglePlay}
-          className="h-[100px] w-[100px] bg-lime-200"
-        >
-          {isPlaying ? (
-            // Stop Icon
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-full w-full"
-              viewBox="0 0 24 24"
-            >
-              <path d="M6 6h12v12H6z" fill="black" />
-            </svg>
-          ) : (
-            // Play Icon
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-full w-full"
-              viewBox="0 0 24 24"
-            >
-              <path d="M8 5v14l11-7z" fill="black" />
-            </svg>
-          )}
-        </button>
       </div>
 
       {/* 2) Scrollable area for everything below the header */}
@@ -325,24 +343,26 @@ export default function UI({
 
         {/* Sound Generators */}
         <div>
-          {submittedEquations.map(({ equation, params, graphId, gain }, idx) => {
-            const { domain, critical } = memoizedValues[idx];
-            return (
-              <SoundGenerator
-                key={graphId}
-                equation={equation}
-                params={params}
-                graphId={graphId}
-                isPlaying={isPlaying}
-                bpm={bpm}
-                xStart={domain.xStart}
-                xEnd={domain.xEnd}
-                cpxValue={critical.cpx}
-                cpyValue={critical.cpy}
-                gain={gain}
-              />
-            );
-          })}
+          {submittedEquations.map(
+            ({ equation, params, graphId, gain }, idx) => {
+              const { domain, critical } = memoizedValues[idx];
+              return (
+                <SoundGenerator
+                  key={graphId}
+                  equation={equation}
+                  params={params}
+                  graphId={graphId}
+                  isPlaying={isPlaying}
+                  bpm={bpm}
+                  xStart={domain.xStart}
+                  xEnd={domain.xEnd}
+                  cpxValue={critical.cpx}
+                  cpyValue={critical.cpy}
+                  gain={gain}
+                />
+              );
+            }
+          )}
         </div>
 
         {/* Animation Generators */}

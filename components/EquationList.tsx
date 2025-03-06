@@ -1,5 +1,5 @@
 import "katex/dist/katex.min.css";
-import { BlockMath } from "react-katex";
+import { InlineMath } from "react-katex";
 import { Knob } from "primereact/knob";
 
 interface EquationListProps {
@@ -41,8 +41,11 @@ const EquationList = ({
             onClick={() => onSelect(index)}
             className={`relative flex flex-row items-center px-2 py-1 ${rowBg} hover:bg-lime-100`}
           >
-            <div className="font-large" style={{ color: equation.color }}>
-              <BlockMath>{`f(x) = ${equation.latex}`}</BlockMath>
+            <div
+              className="font-large my-2"
+              style={{ color: equation.color, fontSize: "1.5rem" }}
+            >
+              <InlineMath>{`f(x) = ${equation.latex}`}</InlineMath>
             </div>
             <div className="ml-auto mr-7">
               <Knob

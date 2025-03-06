@@ -5,6 +5,9 @@
     "@typescript-eslint/no-explicit-any": "off",
     "prefer-const": "off",
     "no-var": "off",
-    "react-hooks/exhaustive-deps": "off"
+    "react-hooks/exhaustive-deps": "off",
+    "object-curly-spacing": "off",
+    "max-len": "off",
+    "spaced-comment": "off"
   }
 }
