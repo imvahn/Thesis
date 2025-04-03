@@ -48,12 +48,12 @@ export default function AnimationGenerator({
         duration = ((16 - transformX) * 60) / bpm; // one to one functions last the entire time they're visible.
       } else if (["e^{x}", "2^{x}"].includes(baseEquation)) {
         duration = ((xEnd - xStart) * 60) / bpm;
-      } else if (["\\frac{x}{x}", "\\sqrt[3]{x}"].includes(baseEquation)) {
+      } else if (["\\frac{1}{x}", "\\sqrt[3]{x}"].includes(baseEquation)) {
         duration = (32 * 60) / bpm; // (32*60)/bpm seconds in 8 measures
       } else {
         duration = 0;
       }
-
+      console.log(duration);
       // Using the same interval as before
       interval = (12 * 1) / 384;
 
@@ -101,6 +101,7 @@ export default function AnimationGenerator({
       } else {
         transportTime = ((transformX + 16) * 60) / bpm; // 60/bpm * 32 is 8 measures of 4 beats per measure
       }
+      console.log("t",transportTime);
       // Start the loop with the calculated transport time.
       const loop = new Tone.Loop((time) => {
         Animate();

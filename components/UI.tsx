@@ -9,16 +9,12 @@ import {
   SetStateAction,
 } from "react";
 import * as Tone from "tone";
-import nerdamer from "nerdamer";
-import "nerdamer/Calculus";
-import "nerdamer/Algebra";
-import "nerdamer/Solve";
 import "katex/dist/katex.min.css";
 
 import EquationList from "@/components/EquationList";
 import SoundGenerator from "@/components/SoundGenerator";
 import AnimationGenerator from "@/components/AnimationGenerator";
-import { EquationEntry } from "@/components/Calculator";
+import { EquationEntry } from "@/lib/equations";
 import Slider from "@mui/material/Slider";
 
 interface Props {
@@ -122,28 +118,9 @@ export default function UI({
     } else {
       let cpxValue: string;
       let cpyValue: string;
-
-      // Special cases
-      if (
-        [
-          "\\left|x\\right|",
-          "e^{x}",
-          "2^{x}",
-          "\\sqrt[2]{x}",
-          "\\sqrt[3]{x}",
-          "\\ln{x}",
-          "\\frac{1}{x}",
-        ].includes(baseEquation)
-      ) {
-        // Only look at shift
-        cpxValue = tx.toString();
-        cpyValue = ty.toString();
-      } else {
-        const e = nerdamer.convertFromLaTeX(eq);
-        const d1 = nerdamer.diff(e, "x").expand();
-        cpxValue = d1.solveFor("x").toString();
-        cpyValue = e.sub("x", cpxValue.toString()).evaluate().text();
-      }
+      // Only look at shift
+      cpxValue = tx.toString();
+      cpyValue = ty.toString();
       return { cpx: cpxValue, cpy: cpyValue };
     }
   };
