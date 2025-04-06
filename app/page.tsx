@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { EquationEntry } from "@/lib/equations";
 import dynamic from "next/dynamic";
-const Calculator = dynamic(() => import("@/components/CalculatorV1"), {
+const Calculator = dynamic(() => import("@/components/Calculator"), {
   ssr: false,
 });
 

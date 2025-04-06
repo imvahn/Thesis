@@ -53,7 +53,6 @@ export default function AnimationGenerator({
       } else {
         duration = 0;
       }
-      console.log(duration);
       // Using the same interval as before
       interval = (12 * 1) / 384;
 
@@ -101,7 +100,6 @@ export default function AnimationGenerator({
       } else {
         transportTime = ((transformX + 16) * 60) / bpm; // 60/bpm * 32 is 8 measures of 4 beats per measure
       }
-      console.log("t",transportTime);
       // Start the loop with the calculated transport time.
       const loop = new Tone.Loop((time) => {
         Animate();

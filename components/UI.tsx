@@ -72,7 +72,7 @@ export default function UI({
   isPlaying,
   setIsPlaying,
 }: Props) {
-  const [bpm, setBPM] = useState(60);
+  const [bpm, setBPM] = useState(80);
   const [flash, setFlash] = useState(false);
 
   const handlePlay = async () => {

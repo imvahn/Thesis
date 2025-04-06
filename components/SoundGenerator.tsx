@@ -36,19 +36,20 @@ export default function SoundGenerator({
   const { baseEquation, stretch, transformX, transformY } = params;
 
   const synthRef = useRef<Tone.FMSynth | null>(null);
+  const oscillatorRef = useRef<Tone.FMOscillator | null>(null);
   const membraneRef = useRef<Tone.MembraneSynth | null>(null);
+  const metalRef = useRef<Tone.MetalSynth | null>(null);
   const pluckRef = useRef<Tone.PluckSynth | null>(null);
-  const samplerRef = useRef<Tone.Sampler | null>(null);
   const filterRef = useRef<Tone.Filter | null>(null);
   const ringRef = useRef<Tone.FrequencyShifter | null>(null);
   const envelopeRef = useRef<Tone.AmplitudeEnvelope | null>(null);
+  const chorusRef = useRef<Tone.Chorus | null>(null);
+  const phaserRef = useRef<Tone.Phaser | null>(null);
   const gainRef = useRef<Tone.Gain | null>(null);
   const reverbRef = useRef<Tone.Reverb | null>(null);
   const LFORef = useRef<Tone.LFO | null>(null);
   const WaveShaperRef = useRef<Tone.WaveShaper | null>(null);
   const loopRef = useRef<Tone.Loop | null>(null);
-
-  const [samplerLoaded, setSamplerLoaded] = useState<boolean>(false);
 
   // Chromatic key map
   const keyMap: { [key: string]: string } = {
@@ -81,6 +82,35 @@ export default function SoundGenerator({
 
   // Chromatic bass key map
   const bassKeyMap: { [key: string]: string } = {
+    "-12": "C1",
+    "-11": "C#1",
+    "-10": "D1",
+    "-9": "D#1",
+    "-8": "E1",
+    "-7": "F1",
+    "-6": "F#1",
+    "-5": "G1",
+    "-4": "G#1",
+    "-3": "A1",
+    "-2": "A#1",
+    "-1": "B1",
+    "0": "C2",
+    "1": "C#2",
+    "2": "D2",
+    "3": "D#2",
+    "4": "E2",
+    "5": "F2",
+    "6": "F#2",
+    "7": "G2",
+    "8": "G#2",
+    "9": "A2",
+    "10": "A#2",
+    "11": "B2",
+    "12": "C3",
+  };
+
+  // membrane synth keymap
+  const drumKeyMap: { [key: string]: string } = {
     "-12": "C1",
     "-11": "C#1",
     "-10": "D1",
@@ -162,8 +192,8 @@ export default function SoundGenerator({
       if (minY === maxY) return 4000;
       let cutoff: number;
       if (baseEquation === "x^{2}") {
-        cutoff = ((yVal - minY) / (maxY - minY)) * (1000 - 500) + 200;
-        cutoff = Math.max(500, Math.min(1000, cutoff));
+        cutoff = ((yVal - minY) / (maxY - minY)) * (500 - 200) + 200;
+        cutoff = Math.max(200, Math.min(500, cutoff));
       } else {
         cutoff = ((yVal - minY) / (maxY - minY)) * (4000 - 200) + 200;
         cutoff = Math.max(200, Math.min(4000, cutoff));
@@ -187,7 +217,8 @@ export default function SoundGenerator({
       // Map x from [-1, 1] to [xStart, xEnd]
       const t = ((x + 1) / 2) * (xEnd - xStart) + xStart;
       const yVal = func(t);
-      // Compute the endpoints
+      if (t > xEnd) return 0;
+      if (yVal < -12) return 0;
       const yValStart = func(xStart);
       const yValEnd = func(xEnd);
       const yMin = Math.min(yValStart, yValEnd);
@@ -203,9 +234,9 @@ export default function SoundGenerator({
       const t = ((x + 1) / 2) * (16 - xStart) + xStart;
       const yVal = func(t);
       if (t > xEnd) return 0;
+      if (yVal < -12) return 0;
       const yValStart = func(xStart);
       const yValEnd = func(xEnd);
-      // console.log(yValStart,yValEnd);
       const yMin = Math.min(yValStart, yValEnd);
       const yMax = Math.max(yValStart, yValEnd);
       if (!isFinite(yVal) || !isFinite(yMin) || !isFinite(yMax)) return 0;
@@ -315,7 +346,7 @@ export default function SoundGenerator({
         break;
       case "\\sqrt[3]{x}":
         computedPhase = 180;
-        // 8 = 2; 12 = 
+        // 8 = 2; 12 =
         computedBaseFunc = (t: number) => stretch * Math.cbrt(t);
         computedCutoffFunction = computeCutoff(computedBaseFunc);
         break;
@@ -336,20 +367,7 @@ export default function SoundGenerator({
         computedFrequencyFunction = computeFrequency(computedBaseFunc);
         break;
       case "e^{x}":
-        // -16 = 170; -15 = 150; -8 = 135; 0 = 180; +8 = 230; +16 = 295;
-        if (transformX < -15) {
-          computedPhase = 170;
-        } else if (-15 <= transformX && transformX <= -8) {
-          computedPhase = 135 + (-1 * (transformX + 8) * (150 - 135) / 7); // going between phase of 135 and 150 in even increments (135+ because 135 or more)
-        } else if (-8 < transformX && transformX <= 0) {
-          computedPhase = 180 - (-1 * transformX * (180 - 135) / 8);
-          // going between phase of 180 and 135 in even increments (180- because 180 or less)
-        } else if (0 < transformX && transformX <= 8) {
-          computedPhase = 180 + (transformX * (230 - 180) / 8);
-          // going between phase of 180 and 230 in even increments (180+ because 180 or more)
-        } else { // transformX > 8
-          computedPhase = 230 + ((transformX - 8) * (295 - 230) / 8); // going between phase of 230 and 295 in even increments (230+ because 230 or more)
-        }
+        computedPhase = 180;
         computedBaseFunc = (t: number) => stretch * Math.exp(t) + transformY;
         computedRingFunction = computeRingExp(computedBaseFunc);
         break;
@@ -402,84 +420,91 @@ export default function SoundGenerator({
     WaveShaperRef.current = shaper;
   }
 
-  // Preload the sampler on mount
-  useEffect(() => {
-    if (!samplerRef.current) {
-      switch (baseEquation) {
-        case "x^{2}":
-          samplerRef.current = new Tone.Sampler({
-            urls: {
-              C3: "kick2.mp3",
-            },
-            attack: 0.2,
-            release: 0.2,
-            baseUrl: "/api/samples/",
-            onload: () => setSamplerLoaded(true),
-          });
-        case "x^{3}":
-          samplerRef.current = new Tone.Sampler({
-            urls: {
-              C3: "Snare.mp3",
-            },
-            attack: 0.2,
-            release: 0.2,
-            baseUrl: "/api/samples/",
-            onload: () => setSamplerLoaded(true),
-          });
-        case "e^{x}":
-          samplerRef.current = new Tone.Sampler({
-            urls: {
-              C3: "LongC.mp3",
-            },
-            attack: 0.2,
-            release: 0.2,
-            baseUrl: "/api/samples/",
-            onload: () => setSamplerLoaded(true),
-          });
-        default:
-          samplerRef.current = new Tone.Sampler({
-            urls: {
-              C3: "LongC.mp3",
-            },
-            attack: 0.2,
-            release: 0.2,
-            baseUrl: "/api/samples/",
-            onload: () => setSamplerLoaded(true),
-          });
-      }
-    }
-    return () => {
-      if (samplerRef.current) {
-        samplerRef.current.dispose();
-        samplerRef.current = null;
-      }
-    };
-  }, [baseEquation]);
-
   // Initialize synth and control Tone.Transport based on isPlaying
   useEffect(() => {
     if (isPlaying) {
       switch (baseEquation) {
-        case "\\sqrt[2]{x}":
-          if (!pluckRef.current) {
-            pluckRef.current = new Tone.PluckSynth({});
-          }
         case "x^{2}":
-          if (!membraneRef.current) {
-            membraneRef.current = new Tone.MembraneSynth({});
+          if (!synthRef.current) {
+            synthRef.current = new Tone.FMSynth({
+              oscillator: { type: "sine" },
+              modulation: { type: "sawtooth3" },
+              harmonicity: 1,
+            });
           }
+          break;
+        case "x^{3}":
+          if (!synthRef.current) {
+            synthRef.current = new Tone.FMSynth({
+              oscillator: { type: "sine" },
+              modulation: { type: "square" },
+              modulationIndex: 12.22,
+            });
+          }
+          break;
+        case "\\ln{x}":
+          if (!synthRef.current) {
+            synthRef.current = new Tone.FMSynth({
+              oscillator: { type: "sine" },
+              modulation: { type: "triangle" },
+            });
+          }
+          break;
+        case "e^{x}":
+          if (!synthRef.current) {
+            synthRef.current = new Tone.FMSynth({
+              oscillator: { type: "square" },
+              modulation: { type: "triangle" },
+              harmonicity: 0.5,
+            });
+            synthRef.current.volume.value = -10;
+          }
+          break;
+        case "\\left|x\\right|":
+          if (!membraneRef.current) {
+            membraneRef.current = new Tone.MembraneSynth({
+              octaves: 8,
+            });
+            membraneRef.current.volume.value = 10;
+          }
+          if (!metalRef.current) {
+            metalRef.current = new Tone.MetalSynth({
+              harmonicity: 5,
+              resonance: 1000,
+            });
+            metalRef.current.volume.value = -15;
+          }
+          break;
+        case "\\frac{1}{x}":
+          synthRef.current = new Tone.FMSynth({
+            oscillator: { type: "sine" },
+          });
+          break;
+        case "\\sqrt[2]{x}":
+          if (!synthRef.current) {
+            synthRef.current = new Tone.FMSynth({
+              oscillator: { type: "sine" },
+              modulation: { type: "triangle" },
+            });
+          }
+          break;
+        case "\\sqrt[3]{x}":
+          if (!synthRef.current) {
+            synthRef.current = new Tone.FMSynth({
+              oscillator: { type: "triangle15" },
+              modulation: { type: "square13" },
+              harmonicity: 0.25,
+              envelope: {
+                attack: 1,
+                release: 0.1,
+              },
+            });
+          }
+          break;
         default:
           if (!synthRef.current) {
             synthRef.current = new Tone.FMSynth({
               oscillator: { type: "sawtooth" },
-              // envelope: {
-              //   attack: 0.1,
-              //   release: 1,
-              // },
-              // harmonicity: 5,
-              // modulation: {
-              //   type: "fatsine",
-              // },
             });
           }
       }
@@ -494,6 +519,10 @@ export default function SoundGenerator({
         membraneRef.current.dispose();
         membraneRef.current = null;
       }
+      if (metalRef.current) {
+        metalRef.current.dispose();
+        metalRef.current = null;
+      }
       if (pluckRef.current) {
         pluckRef.current.dispose();
         pluckRef.current = null;
@@ -501,85 +530,118 @@ export default function SoundGenerator({
 
       Tone.getTransport().stop();
       Tone.getTransport().cancel(0);
-      if (samplerRef.current) {
-        samplerRef.current.releaseAll();
-      }
     }
     return () => {
       if (synthRef.current) {
         synthRef.current.dispose();
         synthRef.current = null;
       }
+      if (membraneRef.current) {
+        membraneRef.current.dispose();
+        membraneRef.current = null;
+      }
+      if (metalRef.current) {
+        metalRef.current.dispose();
+        metalRef.current = null;
+      }
+      if (pluckRef.current) {
+        pluckRef.current.dispose();
+        pluckRef.current = null;
+      }
     };
   }, [isPlaying, bpm]);
 
   // Setup filter, LFO, etc.
   useEffect(() => {
-    console.log(
-      synthRef.current,
-      samplerLoaded,
-      membraneRef.current,
-      pluckRef.current,
-      xStart,
-      xEnd
-    );
+    // console.log(
+    //   synthRef.current,
+    //   membraneRef.current,
+    //   pluckRef.current,
+    //   xStart,
+    //   xEnd
+    // );
     if (
-      samplerLoaded &&
-      (synthRef.current || membraneRef.current || pluckRef.current) &&
+      (synthRef.current ||
+        membraneRef.current ||
+        pluckRef.current ||
+        metalRef.current) &&
       xStart !== null &&
       xEnd !== null
     ) {
       // console.log("t");
       filterRef.current = new Tone.Filter({
         type: "lowpass",
-        frequency: 0,
+        frequency: 1000,
         rolloff: -24,
         Q: 3,
       });
       reverbRef.current = new Tone.Reverb();
       gainRef.current = new Tone.Gain(gain).toDestination();
+
       switch (baseEquation) {
+        case "x^{2}":
+          if (synthRef.current) {
+            synthRef.current.chain(
+              filterRef.current,
+              // reverbRef.current,
+              gainRef.current
+            );
+          }
+          break;
+        case "x^{3}":
+          if (synthRef.current) {
+            synthRef.current.chain(filterRef.current, gainRef.current);
+          }
+          break;
+        case "\\ln{x}":
+          if (synthRef.current) {
+            synthRef.current.chain(filterRef.current, gainRef.current);
+          }
+          break;
         case "e^{x}":
           ringRef.current = new Tone.FrequencyShifter({
             frequency: 1,
           });
-          if (samplerRef.current) {
-            samplerRef.current.chain(
-              ringRef.current,
-              reverbRef.current,
-              gainRef.current
-            );
+          if (synthRef.current) {
+            synthRef.current.chain(ringRef.current, gainRef.current);
           }
-        // ringRef.current.connect(reverbRef.current);
-        // } else if (baseEquation === "\\sqrt[3]{x}") {
-        //   samplerRef.current.chain(
-        //     filterRef.current,
-        //     gainRef.current
-        //   );
-        case "x^{2}":
+          break;
+        case "\\left|x\\right|":
           if (membraneRef.current) {
             membraneRef.current.chain(
-              filterRef.current,
-              reverbRef.current,
+              // filterRef.current,
+              // reverbRef.current,
               gainRef.current
             );
           }
+          if (metalRef.current) {
+            metalRef.current.chain(gainRef.current);
+          }
+          break;
+        case "\\frac{1}{x}":
+          if (synthRef.current) {
+            synthRef.current.chain(
+              filterRef.current,
+              // reverbRef.current,
+              gainRef.current
+            );
+          }
+          break;
         case "\\sqrt[2]{x}":
-          if (pluckRef.current) {
-            pluckRef.current.chain(
-              filterRef.current,
-              reverbRef.current,
+          if (synthRef.current) {
+            synthRef.current.chain(
+              // filterRef.current,
+              // reverbRef.current,
               gainRef.current
             );
           }
+          break;
+        case "\\sqrt[3]{x}":
+          if (synthRef.current) {
+            synthRef.current.chain(filterRef.current, gainRef.current);
+          }
+          break;
         default:
-          if (samplerRef.current) {
-            samplerRef.current.chain(
-              filterRef.current,
-              reverbRef.current,
-              gainRef.current
-            );
-          }
           if (synthRef.current) {
             synthRef.current.chain(
               filterRef.current,
@@ -636,6 +698,10 @@ export default function SoundGenerator({
         ringRef.current.dispose();
         ringRef.current = null;
       }
+      if (chorusRef.current) {
+        chorusRef.current.dispose();
+        chorusRef.current = null;
+      }
       if (gainRef.current) {
         gainRef.current.dispose();
         gainRef.current = null;
@@ -644,16 +710,12 @@ export default function SoundGenerator({
         reverbRef.current.dispose();
         reverbRef.current = null;
       }
-      if (pluckRef.current) {
-        pluckRef.current.dispose();
-        pluckRef.current = null;
-      }
     };
   }, [
     synthRef.current,
     pluckRef.current,
+    metalRef.current,
     membraneRef.current,
-    samplerLoaded,
     xStart,
     xEnd,
     baseEquation,
@@ -673,13 +735,7 @@ export default function SoundGenerator({
 
   // Trigger the note
   useEffect(() => {
-    if (
-      isPlaying &&
-      samplerLoaded &&
-      cpyValue !== null &&
-      xStart !== null &&
-      xEnd !== null
-    ) {
+    if (isPlaying && cpyValue !== null && xStart !== null && xEnd !== null) {
       const transportTime = calculateTransportTime(baseEquation);
       const duration = calculateDuration(baseEquation);
 
@@ -687,39 +743,39 @@ export default function SoundGenerator({
       if (!isNaN(yNum)) {
         let note: string;
         const yKey = Math.round(yNum).toString();
-        note = keyMap[yKey];
+        if (baseEquation === "\\left|x\\right|") {
+          note = drumKeyMap[yKey];
+        } else {
+          note = keyMap[yKey];
+        }
         if (note) {
           const loop = new Tone.Loop((time) => {
             switch (baseEquation) {
-              case "\\sqrt[3]{x}":
-                // let currentStep = 0;
-                // const STEPS = 32 * stretch;
-                // const interval = (1 / Math.abs(stretch)) * (60 / bpm);
-                // const id = Tone.getTransport().scheduleRepeat(
-                //   (time) => {
-                //     samplerRef.current?.triggerAttackRelease(
-                //       note,
-                //       interval,
-                //       time
-                //     );
-                //     currentStep++;
-                //     if (currentStep >= STEPS) Tone.getTransport().clear(id);
-                //   },
-                //   interval,
-                //   undefined,
-                //   duration
-                // );
-                // samplerRef.current?.triggerAttackRelease(note, duration, time);
+              case "x^{2}":
                 synthRef.current?.triggerAttackRelease(note, duration, time);
                 break;
-              case "x^{3}":
-              case "e^{x}":
-                samplerRef.current?.triggerAttackRelease(note, duration, time);
+              case "x^{x}":
+                synthRef.current?.triggerAttackRelease(note, duration, time);
                 break;
-              case "x^{2}":
-                membraneRef.current?.triggerAttackRelease(note, duration, time);
+              case "\\ln{x}":
+                synthRef.current?.triggerAttackRelease(note, duration, time);
+                break;
+              case "e^{x}":
+                synthRef.current?.triggerAttackRelease(note, duration, time);
+                break;
+              case "\\left|x\\right|":
+                if (yNum > 0) {
+                  metalRef.current?.triggerAttackRelease(note, duration, time);
+                } else {
+                  metalRef.current?.triggerAttackRelease(note, duration, time);
+                }
+                break;
               case "\\sqrt[2]{x}":
-                pluckRef.current?.triggerAttackRelease(note, duration, time);
+                synthRef.current?.triggerAttackRelease(note, duration, time);
+                break;
+              case "\\sqrt[3]{x}":
+                synthRef.current?.triggerAttackRelease(note, duration, time);
+                break;
               default:
                 synthRef.current?.triggerAttackRelease(note, duration, time);
                 break;
@@ -738,7 +794,6 @@ export default function SoundGenerator({
     }
   }, [
     cpyValue,
-    samplerLoaded,
     isPlaying,
     xStart,
     xEnd,
@@ -748,15 +803,5 @@ export default function SoundGenerator({
     stretch,
   ]);
 
-  return (
-    <>
-      {!samplerLoaded && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-700 bg-opacity-50">
-          <div className="bg-white px-6 py-4 rounded shadow-lg text-black">
-            <p>Loading...</p>
-          </div>
-        </div>
-      )}
-    </>
-  );
+  return <></>;
 }
