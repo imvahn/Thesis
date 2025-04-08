@@ -45,6 +45,7 @@ export default function SoundGenerator({
   const envelopeRef = useRef<Tone.AmplitudeEnvelope | null>(null);
   const chorusRef = useRef<Tone.Chorus | null>(null);
   const phaserRef = useRef<Tone.Phaser | null>(null);
+  const noiseRef = useRef<Tone.NoiseSynth | null>(null);
   const gainRef = useRef<Tone.Gain | null>(null);
   const reverbRef = useRef<Tone.Reverb | null>(null);
   const LFORef = useRef<Tone.LFO | null>(null);
@@ -124,18 +125,18 @@ export default function SoundGenerator({
     "-2": "A#1",
     "-1": "B1",
     "0": "C2",
-    "1": "C#2",
-    "2": "D2",
-    "3": "D#2",
-    "4": "E2",
-    "5": "F2",
-    "6": "F#2",
-    "7": "G2",
-    "8": "G#2",
-    "9": "A2",
-    "10": "A#2",
-    "11": "B2",
-    "12": "C3",
+    "1": "C#6",
+    "2": "D6",
+    "3": "D#6",
+    "4": "E6",
+    "5": "F6",
+    "6": "F#6",
+    "7": "G6",
+    "8": "G#6",
+    "9": "A6",
+    "10": "A#6",
+    "11": "B6",
+    "12": "C7",
   };
 
   // Utility functions
@@ -378,7 +379,7 @@ export default function SoundGenerator({
         break;
       case "\\frac{1}{x}":
         computedPhase = 180;
-        computedBaseFunc = (t: number) => stretch * (1 / t);
+        computedBaseFunc = (t: number) => stretch * (1 / t) + transformY;
         computedFrequencyFunction = computeFrequency(computedBaseFunc);
         break;
       default:
@@ -431,6 +432,7 @@ export default function SoundGenerator({
               modulation: { type: "sawtooth3" },
               harmonicity: 1,
             });
+            synthRef.current.volume.value = -20;
           }
           break;
         case "x^{3}":
@@ -440,6 +442,7 @@ export default function SoundGenerator({
               modulation: { type: "square" },
               modulationIndex: 12.22,
             });
+            synthRef.current.volume.value = -20;
           }
           break;
         case "\\ln{x}":
@@ -448,6 +451,7 @@ export default function SoundGenerator({
               oscillator: { type: "sine" },
               modulation: { type: "triangle" },
             });
+            synthRef.current.volume.value = -20;
           }
           break;
         case "e^{x}":
@@ -457,7 +461,7 @@ export default function SoundGenerator({
               modulation: { type: "triangle" },
               harmonicity: 0.5,
             });
-            synthRef.current.volume.value = -10;
+            synthRef.current.volume.value = -25;
           }
           break;
         case "\\left|x\\right|":
@@ -465,30 +469,26 @@ export default function SoundGenerator({
             membraneRef.current = new Tone.MembraneSynth({
               octaves: 8,
             });
-            membraneRef.current.volume.value = 10;
           }
           if (!metalRef.current) {
             metalRef.current = new Tone.MetalSynth({
-              harmonicity: 5,
-              resonance: 1000,
+              harmonicity: 1,
             });
-            metalRef.current.volume.value = -15;
+            metalRef.current.volume.value = -20;
+          }
+          if (!noiseRef.current) {
+            noiseRef.current = new Tone.NoiseSynth({});
           }
           break;
         case "\\frac{1}{x}":
-          synthRef.current = new Tone.FMSynth({
-            oscillator: { type: "sine" },
-          });
-          break;
-        case "\\sqrt[2]{x}":
           if (!synthRef.current) {
             synthRef.current = new Tone.FMSynth({
               oscillator: { type: "sine" },
-              modulation: { type: "triangle" },
             });
+            synthRef.current.volume.value = -20;
           }
           break;
-        case "\\sqrt[3]{x}":
+        case "\\sqrt[2]{x}":
           if (!synthRef.current) {
             synthRef.current = new Tone.FMSynth({
               oscillator: { type: "triangle15" },
@@ -499,6 +499,16 @@ export default function SoundGenerator({
                 release: 0.1,
               },
             });
+            synthRef.current.volume.value = -20;
+          }
+          break;
+        case "\\sqrt[3]{x}":
+          if (!synthRef.current) {
+            synthRef.current = new Tone.FMSynth({
+              oscillator: { type: "sine" },
+              modulation: { type: "triangle" },
+            });
+            synthRef.current.volume.value = -20;
           }
           break;
         default:
@@ -523,6 +533,10 @@ export default function SoundGenerator({
         metalRef.current.dispose();
         metalRef.current = null;
       }
+      if (noiseRef.current) {
+        noiseRef.current.dispose();
+        noiseRef.current = null;
+      }
       if (pluckRef.current) {
         pluckRef.current.dispose();
         pluckRef.current = null;
@@ -544,6 +558,10 @@ export default function SoundGenerator({
         metalRef.current.dispose();
         metalRef.current = null;
       }
+      if (noiseRef.current) {
+        noiseRef.current.dispose();
+        noiseRef.current = null;
+      }
       if (pluckRef.current) {
         pluckRef.current.dispose();
         pluckRef.current = null;
@@ -564,6 +582,7 @@ export default function SoundGenerator({
       (synthRef.current ||
         membraneRef.current ||
         pluckRef.current ||
+        noiseRef.current ||
         metalRef.current) &&
       xStart !== null &&
       xEnd !== null
@@ -614,8 +633,19 @@ export default function SoundGenerator({
               gainRef.current
             );
           }
+          if (noiseRef.current) {
+            noiseRef.current.chain(
+              // filterRef.current,
+              // reverbRef.current,
+              gainRef.current
+            );
+          }
           if (metalRef.current) {
-            metalRef.current.chain(gainRef.current);
+            metalRef.current.chain(
+              // filterRef.current,
+              // reverbRef.current,
+              gainRef.current
+            );
           }
           break;
         case "\\frac{1}{x}":
@@ -630,7 +660,7 @@ export default function SoundGenerator({
         case "\\sqrt[2]{x}":
           if (synthRef.current) {
             synthRef.current.chain(
-              // filterRef.current,
+              filterRef.current,
               // reverbRef.current,
               gainRef.current
             );
@@ -638,7 +668,11 @@ export default function SoundGenerator({
           break;
         case "\\sqrt[3]{x}":
           if (synthRef.current) {
-            synthRef.current.chain(filterRef.current, gainRef.current);
+            synthRef.current.chain(
+              filterRef.current,
+              // reverbRef.current,
+              gainRef.current
+            );
           }
           break;
         default:
@@ -716,6 +750,7 @@ export default function SoundGenerator({
     pluckRef.current,
     metalRef.current,
     membraneRef.current,
+    noiseRef.current,
     xStart,
     xEnd,
     baseEquation,
@@ -766,8 +801,15 @@ export default function SoundGenerator({
               case "\\left|x\\right|":
                 if (yNum > 0) {
                   metalRef.current?.triggerAttackRelease(note, duration, time);
+                } else if (yNum < 0) {
+                  membraneRef.current?.triggerAttackRelease(
+                    note,
+                    duration,
+                    time
+                  );
                 } else {
-                  metalRef.current?.triggerAttackRelease(note, duration, time);
+                  // yNum == 0
+                  noiseRef.current?.triggerAttackRelease(duration, time);
                 }
                 break;
               case "\\sqrt[2]{x}":
