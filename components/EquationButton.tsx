@@ -71,7 +71,7 @@ export default function EquationButton({
     const A = displayValueOrSymbol(parsedA, "a", "red");
     const H = displayValueOrSymbol(parsedH, "h", "blue");
     const K = displayValueOrSymbol(parsedK, "k", "purple");
-    const P = displayValueOrSymbol(parsedP, "p", "green");
+    const P = displayValueOrSymbol(parsedP, "n", "green");
 
     switch (equationType) {
       case "Polynomial":
@@ -249,7 +249,7 @@ export default function EquationButton({
               className="w-16 px-2 py-1 text-lg text-center border-2 border-green-300 rounded focus:outline-none transition-transform duration-200 hover:scale-105"
               value={pInput}
               onChange={(e) => setPInput(e.target.value)}
-              placeholder="p"
+              placeholder="n"
             />
           </label>
         )}
