@@ -405,7 +405,6 @@ export default function SoundGenerator({
     outputParam: Tone.Signal<any>,
     frequency: number
   ) {
-    // console.log("setting up lfo");
     const transportTime = calculateTransportTime(baseEquation);
     const lfo = new Tone.LFO({
       frequency,
@@ -440,7 +439,6 @@ export default function SoundGenerator({
             synthRef.current = new Tone.FMSynth({
               oscillator: { type: "sine" },
               modulation: { type: "square" },
-              modulationIndex: 12.22,
             });
             synthRef.current.volume.value = -20;
           }
@@ -569,15 +567,8 @@ export default function SoundGenerator({
     };
   }, [isPlaying, bpm]);
 
-  // Setup filter, LFO, etc.
+  // Setup LFO, effects and connect
   useEffect(() => {
-    // console.log(
-    //   synthRef.current,
-    //   membraneRef.current,
-    //   pluckRef.current,
-    //   xStart,
-    //   xEnd
-    // );
     if (
       (synthRef.current ||
         membraneRef.current ||
@@ -587,7 +578,6 @@ export default function SoundGenerator({
       xStart !== null &&
       xEnd !== null
     ) {
-      // console.log("t");
       filterRef.current = new Tone.Filter({
         type: "lowpass",
         frequency: 1000,
@@ -683,10 +673,7 @@ export default function SoundGenerator({
               gainRef.current
             );
           }
-        // filterRef.current.connect(reverbRef.current);
       }
-      // reverbRef.current.connect(gainRef.current);
-      // reverbRef.current.toDestination();
 
       // Setup LFO based on computed memoized functions
       if (memoizedFunctions.computedCutoffFunction && filterRef.current) {

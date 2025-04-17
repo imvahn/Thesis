@@ -15,8 +15,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "THESIS",
-  description: "Vahn Kessler Undergraduate Thesis",
+  title: "DRIVER",
+  description: "A musical tool to practice Algebra II",
 };
 
 export default function RootLayout({

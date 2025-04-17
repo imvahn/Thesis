@@ -87,7 +87,6 @@ export default function UI({
     setIsPlaying(false);
   };
 
-  // Wrap the play/stop toggle with a flash effect.
   const handleButtonClick = async () => {
     if (isPlaying) {
       handleStop();
@@ -118,14 +117,12 @@ export default function UI({
     } else {
       let cpxValue: string;
       let cpyValue: string;
-      // Only look at shift
       cpxValue = tx.toString();
       cpyValue = ty.toString();
       return { cpx: cpxValue, cpy: cpyValue };
     }
   };
 
-  // On "Play," determine xStart/xEnd for each submitted equation
   const computeDomainBounds = (
     baseEquation: string,
     stretch: number,
@@ -222,12 +219,11 @@ export default function UI({
   }, [submittedEquations, isPlaying]);
 
   return (
-    // 1) Use h-screen to occupy the full browser height
     <div className="flex flex-col h-screen">
-      {/* Top toolbar (Tempo Slider & Play/Pause) */}
+      {/* Top Toolbar */}
       <div className="flex flex-col items-center justify-center px-5 py-5 border-gray-300 border-b-2">
         <div className="flex flex-row items-center gap-8">
-          {/* Fixed-width container for the Tempo Slider group */}
+          {/* Slider */}
           <div className="w-56 flex flex-row items-center gap-2">
             <span className="text-sm font-medium text-lime-700">tempo:</span>
             <Slider
@@ -240,7 +236,7 @@ export default function UI({
               className="w-40 cursor-pointer"
               sx={{
                 color: "#a3e635", // lime-400
-                // remove box shadow/highlight from all instances
+                // Remove box shadow/highlight from all instances
                 "& .MuiSlider-thumb": {
                   boxShadow: "none",
                   "&:focus, &:hover, &.Mui-active": {
@@ -260,7 +256,6 @@ export default function UI({
             className="h-[100px] w-[100px] bg-lime-500 rounded transition-transform duration-300 hover:-rotate-1 hover:scale-105"
           >
             {isPlaying ? (
-              // Stop Icon
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-full w-full"
@@ -269,7 +264,6 @@ export default function UI({
                 <path d="M6 6h12v12H6z" fill="white" />
               </svg>
             ) : (
-              // Play Icon
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-full w-full"
@@ -282,9 +276,8 @@ export default function UI({
         </div>
       </div>
 
-      {/* 2) Scrollable area for everything below the header */}
+      {/* EquationList */}
       <div className="flex-1 overflow-auto">
-        {/* EquationList first */}
         <EquationList
           equations={equations}
           onRemove={(index) => {
@@ -298,7 +291,6 @@ export default function UI({
           }}
           selectedIndex={selectedIndex}
           onGainChange={(index, newGain) => {
-            // 1) Update local equations array
             setEquations((prev) => {
               const updated = [...prev];
               updated[index] = {
@@ -307,7 +299,6 @@ export default function UI({
               };
               return updated;
             });
-            // 2) Update the submittedEquations (so SoundGenerator sees the new gain)
             const eq = equations[index];
             if (!eq) return;
             setSubmittedEquations((prev) =>
@@ -318,7 +309,7 @@ export default function UI({
           }}
         />
 
-        {/* Sound Generators */}
+        {/* Generators */}
         <div>
           {submittedEquations.map(
             ({ equation, params, graphId, gain }, idx) => {
@@ -342,7 +333,6 @@ export default function UI({
           )}
         </div>
 
-        {/* Animation Generators */}
         <div>
           {submittedEquations.map(({ equation, params, graphId }, idx) => {
             const { domain, critical } = memoizedValues[idx];

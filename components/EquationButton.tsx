@@ -172,7 +172,7 @@ export default function EquationButton({
 
   return (
     <div className="w-full flex flex-row items-center bg-white h-[10vh]">
-      {/* Left Section: Options Bar */}
+      {/* Options Bar */}
       <div className="flex flex-col items-center justify-center space-y-2 px-2">
         <div className="flex flex-row items-center">
           <label className="font-medium text-gray-700 mr-1">Type:</label>
@@ -198,7 +198,7 @@ export default function EquationButton({
         </button>
       </div>
 
-      {/* Center Section: Equation Preview */}
+      {/* Equation Preview */}
       <div
         className="flex flex-1 items-center justify-center"
         style={{ fontSize: "2rem" }}
@@ -206,7 +206,7 @@ export default function EquationButton({
         <BlockMath>{`f(x) = ${displayEquation}`}</BlockMath>
       </div>
 
-      {/* Right Section: Input Fields */}
+      {/* Input Fields */}
       <div className="flex flex-row items-center space-x-2 px-2">
         <label className="flex flex-col items-center space-x-1">
           {/* <span className="text-red-500 font-semibold">a</span> */}

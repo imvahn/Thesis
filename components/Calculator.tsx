@@ -32,10 +32,8 @@ export type EquationEntry = {
 };
 
 interface CalculatorProps {
-  // Called after we fully create the new equation (including color, expressionIds)
   onEquationAdded: (eq: EquationEntry) => void;
 
-  // Called for SoundGenerators
   onEquationSubmit: (
     equation: string,
     params: {
@@ -52,10 +50,8 @@ interface CalculatorProps {
     instrument: string
   ) => void;
 
-  // Called when an equation is removed
   onEquationRemove: (graphId: string) => void;
 
-  // The parent’s array of equations with updated pointX (for animation)
   submittedEquations: {
     equation: string;
     params: {
@@ -115,7 +111,6 @@ function Calculator(
   const calculatorRef = useRef<HTMLDivElement | null>(null);
   const calculatorInstance = useRef<DesmosCalculator | null>(null);
 
-  // Create the Desmos instance
   useEffect(() => {
     if (calculatorRef.current) {
       const calc = Desmos.GraphingCalculator(calculatorRef.current, {
@@ -156,7 +151,6 @@ function Calculator(
     },
   }));
 
-  // Build final latex for the transformed equation
   function constructTransformedEquation(
     baseEquation: string,
     stretch: number,
@@ -176,7 +170,6 @@ function Calculator(
     return transformed;
   }
 
-  // Map from selected type + optional exponent to baseEquation
   function mapEquationTypeToBaseEquation(
     equationType: string,
     p?: number
@@ -203,7 +196,6 @@ function Calculator(
     }
   }
 
-  // Called by <EquationButton> when user hits "Add Equation"
   const handleEquationSubmitFromButton = (newParams: {
     equationType: string;
     a: number;
@@ -216,22 +208,18 @@ function Calculator(
 
     const color = getColor(newParams.instrument);
 
-    // 1) build the baseEquation
     const baseEquation = mapEquationTypeToBaseEquation(
       newParams.equationType,
       newParams.p
     );
-    // 2) build the final equation
     const finalEquation = constructTransformedEquation(
       baseEquation,
       newParams.a,
       newParams.h,
       newParams.k
     );
-    // 3) generate a unique ID
     const graphId = `${Date.now()}`;
 
-    // 4) build expression IDs
     const exprIds = {
       functionId: `f-${graphId}`,
       paramId: `a-${graphId}`,
@@ -241,7 +229,6 @@ function Calculator(
       graphId: `eq-${graphId}`,
     };
 
-    // 5) set expressions in Desmos
     const calc = calculatorInstance.current;
 
     // (A) hidden function
@@ -282,7 +269,6 @@ function Calculator(
       color: color,
     });
 
-    // Tell the parent that we created a new Desmos equation
     onEquationAdded({
       id: graphId,
       latex: finalEquation,
@@ -291,7 +277,6 @@ function Calculator(
       gain: 5,
     });
 
-    // Also notify the parent so it can create a SoundGenerator entry
     onEquationSubmit(
       finalEquation,
       {
@@ -387,7 +372,6 @@ function Calculator(
       color: color,
     });
 
-    // Call the parent’s update callback so the UI (and Sound/Animation generators) update accordingly
     onEquationUpdate(graphId, {
       equation: finalEquation,
       params: {
@@ -403,7 +387,6 @@ function Calculator(
     });
   };
 
-  // Whenever parent's submittedEquations changes, we update the param a_{graphId} so the point is “animated”
   useEffect(() => {
     if (!calculatorInstance.current) return;
     const calc = calculatorInstance.current;
@@ -426,16 +409,15 @@ function Calculator(
         style={{ width: "100%", height: "90vh" }}
       />
 
-      {/* EquationButton to add new equations */}
+      {/* EquationButton  */}
       <EquationButton
-        onSubmit={handleEquationSubmitFromButton} // for new equations
-        selectedEquation={selectedEquation} // pass the selected equation, if any
-        onUpdate={handleEquationUpdateFromButton} // callback for updating an existing equation
+        onSubmit={handleEquationSubmitFromButton}
+        selectedEquation={selectedEquation}
+        onUpdate={handleEquationUpdateFromButton}
         isPlaying={isPlaying}
       />
     </div>
   );
 }
 
-// Export the wrapped version so parent can call .removeEquationById(...)
 export default forwardRef(Calculator);

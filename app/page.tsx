@@ -10,11 +10,9 @@ const Calculator = dynamic(() => import("@/components/Calculator"), {
 import UI from "@/components/UI";
 
 export default function Home() {
-  // Keep track of equations for EquationList (rendered in Desmos)
   const [equations, setEquations] = useState<EquationEntry[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Keep track of all submitted equations
   const [submittedEquations, setSubmittedEquations] = useState<
     {
       equation: string;
@@ -33,7 +31,6 @@ export default function Home() {
     }[]
   >([]);
 
-  // selectedEquation holds the equation in update mode.
   const [selectedEquation, setSelectedEquation] = useState<{
     graphId: string;
     equationType: string;
@@ -46,7 +43,6 @@ export default function Home() {
 
   const calculatorRef = useRef<any>(null);
 
-  // Called by Calculator each time a new equation is submitted
   const handleEquationSubmit = (
     equation: string,
     params: {
@@ -68,7 +64,6 @@ export default function Home() {
     ]);
   };
 
-  // Remove from both the Desmos calculator & local arrays
   const handleEquationRemove = (graphId: string) => {
     // 1) Remove from Desmos
     if (calculatorRef.current) {
@@ -86,7 +81,6 @@ export default function Home() {
     }
   };
 
-  // Called when a user clicks an equation in EquationList
   const handleEquationSelect = (index: number) => {
     if (selectedEquation) {
       if (submittedEquations[index].graphId !== selectedEquation.graphId) {
@@ -110,7 +104,6 @@ export default function Home() {
     }
   };
 
-  // When an equation is updated (from EquationButton), clear update mode.
   const handleEquationUpdate = (
     graphId: string,
     updatedData: {
@@ -148,7 +141,6 @@ export default function Home() {
     setSelectedEquation(null);
   };
 
-  // Called by Calculator each time a new equation is fully created
   const handleEquationAdded = (newEq: EquationEntry) => {
     setEquations((prev) => [...prev, newEq]);
   };

@@ -42,41 +42,55 @@ export default function AnimationGenerator({
       let duration: number;
       let interval: number;
 
-      if (["x^{2}", "x^{3}", "\\left|x\\right|"].includes(baseEquation)) {
-        duration = (1 / Math.abs(stretch)) * (60 / bpm);
-      } else if (["\\ln{x}", "\\sqrt[2]{x}"].includes(baseEquation)) {
-        duration = ((16 - transformX) * 60) / bpm; // one to one functions last the entire time they're visible.
-      } else if (["e^{x}", "2^{x}"].includes(baseEquation)) {
-        duration = ((xEnd - xStart) * 60) / bpm;
-      } else if (["\\frac{1}{x}", "\\sqrt[3]{x}"].includes(baseEquation)) {
-        duration = (32 * 60) / bpm; // (32*60)/bpm seconds in 8 measures
-      } else {
-        duration = 0;
+      switch (baseEquation) {
+        case "x^{2}":
+          duration = (1 / Math.abs(stretch)) * (60 / bpm);
+        case "x^{3}":
+          duration = (1 / Math.abs(stretch)) * (60 / bpm);
+        case "\\left|x\\right|":
+          duration = (1 / Math.abs(stretch)) * (60 / bpm);
+        case "\\sqrt[3]{x}":
+          duration = (32 * 60) / bpm; // (32*60)/bpm seconds in 8 measures
+        case "\\sqrt[2]{x}":
+          duration = ((16 - transformX) * 60) / bpm; // one to one functions last the entire time they're visible.
+        case "\\ln{x}":
+          duration = ((16 - transformX) * 60) / bpm; // one to one functions last the entire time they're visible.
+        case "e^{x}":
+          duration = ((xEnd - xStart) * 60) / bpm;
+        case "2^{x}":
+          duration = ((xEnd - xStart) * 60) / bpm;
+        case "\\frac{1}{x}":
+          duration = (32 * 60) / bpm; // (32*60)/bpm seconds in 8 measures
+        default:
+          duration = 0;
       }
-      // Using the same interval as before
-      interval = (12 * 1) / 384;
 
-      // Record the start time of the animation
+      interval = (12 * 1) / 384;
       const startTime = Tone.now();
 
-      const id = Tone.getTransport().scheduleRepeat((time) => {
-        const elapsed = time - startTime;
-        const fraction = elapsed / duration;
-        const t = xStart + fraction * (xEnd - xStart);
+      const id = Tone.getTransport().scheduleRepeat(
+        (time) => {
+          const elapsed = time - startTime;
+          const fraction = elapsed / duration;
+          const t = xStart + fraction * (xEnd - xStart);
 
-        // Schedule the visual update to ensure synchronization with the audio clock
-        Tone.getDraw().schedule(() => {
-          setPointX(t);
-          onPointXChange(graphId, t);
-        }, time);
-
-        if (elapsed >= duration) {
+          // Schedule the visual update to ensure synchronization with the audio clock
           Tone.getDraw().schedule(() => {
-            onPointXChange(graphId, null);
+            setPointX(t);
+            onPointXChange(graphId, t);
           }, time);
-          Tone.getTransport().clear(id);
-        }
-      }, interval, undefined, duration);
+
+          if (elapsed >= duration) {
+            Tone.getDraw().schedule(() => {
+              onPointXChange(graphId, null);
+            }, time);
+            Tone.getTransport().clear(id);
+          }
+        },
+        interval,
+        undefined,
+        duration
+      );
 
       return () => {
         Tone.getTransport().clear(id);
@@ -84,7 +98,6 @@ export default function AnimationGenerator({
         onPointXChange(graphId, null);
       };
     } else {
-      // If not playing or no domain is provided, reset the value.
       setPointX(null);
       onPointXChange(graphId, null);
     }
@@ -93,14 +106,30 @@ export default function AnimationGenerator({
   useEffect(() => {
     if (isPlaying && cpyValue !== null && xStart !== null) {
       let transportTime: number;
-      if (
-        ["e^{x}", "2^{x}", "\\frac{1}{x}", "\\sqrt[3]{x}"].includes(baseEquation)
-      ) {
-        transportTime = 0;
-      } else {
-        transportTime = ((transformX + 16) * 60) / bpm; // 60/bpm * 32 is 8 measures of 4 beats per measure
+
+      switch (equation) {
+        case "x^{2}":
+          transportTime = ((transformX + 16) * 60) / bpm; // 60/bpm * 32 is 8 measures of 4 beats per measure
+        case "x^{3}":
+          transportTime = ((transformX + 16) * 60) / bpm; // 60/bpm * 32 is 8 measures of 4 beats per measure
+        case "\\left|x\\right|":
+          transportTime = ((transformX + 16) * 60) / bpm; // 60/bpm * 32 is 8 measures of 4 beats per measure
+        case "\\sqrt[3]{x}":
+          transportTime = 0;
+        case "\\sqrt[2]{x}":
+          transportTime = ((transformX + 16) * 60) / bpm; // 60/bpm * 32 is 8 measures of 4 beats per measure
+        case "\\ln{x}":
+          transportTime = ((transformX + 16) * 60) / bpm; // 60/bpm * 32 is 8 measures of 4 beats per measure
+        case "e^{x}":
+          transportTime = 0;
+        case "2^{x}":
+          transportTime = 0;
+        case "\\frac{1}{x}":
+          transportTime = 0;
+        default:
+          transportTime = 0;
       }
-      // Start the loop with the calculated transport time.
+
       const loop = new Tone.Loop((time) => {
         Animate();
       }, "8m").start(transportTime);
